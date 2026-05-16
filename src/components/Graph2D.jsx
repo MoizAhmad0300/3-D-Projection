@@ -10,14 +10,20 @@ const Graph2D = ({ onNodeClick }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const dragStateRef = useRef({
-    pointerId: null,
     mode: null,
+    pointerType: null,
+    primaryPointerId: null,
+    pointers: new Map(),
     startX: 0,
     startY: 0,
     startYaw: 0,
     startPitch: 0,
     startPanX: 0,
     startPanY: 0,
+    startZoom: 1,
+    startDistance: 0,
+    startCenterX: 0,
+    startCenterY: 0,
   });
 
   const [nodes, setNodes] = useState([]);
@@ -155,30 +161,85 @@ const Graph2D = ({ onNodeClick }) => {
     return { projectedLinks, projectedNodes };
   }, [dimensions.height, dimensions.width, graphData.links, nodes, view]);
 
+  const beginOrbitFromPointer = (pointerId, clientX, clientY, currentView, pointerType) => {
+    dragStateRef.current.mode = 'orbit';
+    dragStateRef.current.pointerType = pointerType;
+    dragStateRef.current.primaryPointerId = pointerId;
+    dragStateRef.current.startX = clientX;
+    dragStateRef.current.startY = clientY;
+    dragStateRef.current.startYaw = currentView.yaw;
+    dragStateRef.current.startPitch = currentView.pitch;
+  };
+
+  const beginPinchFromPointers = (currentView) => {
+    const pointers = Array.from(dragStateRef.current.pointers.values());
+    if (pointers.length < 2) return;
+
+    const [first, second] = pointers;
+    const deltaX = second.clientX - first.clientX;
+    const deltaY = second.clientY - first.clientY;
+
+    dragStateRef.current.mode = 'pinch';
+    dragStateRef.current.pointerType = 'touch';
+    dragStateRef.current.primaryPointerId = null;
+    dragStateRef.current.startDistance = Math.hypot(deltaX, deltaY);
+    dragStateRef.current.startCenterX = (first.clientX + second.clientX) / 2;
+    dragStateRef.current.startCenterY = (first.clientY + second.clientY) / 2;
+    dragStateRef.current.startPanX = currentView.panX;
+    dragStateRef.current.startPanY = currentView.panY;
+    dragStateRef.current.startZoom = currentView.zoom;
+  };
+
   const handlePointerDown = (event) => {
     if (!containerRef.current) return;
 
-    const mode = event.button === 2 || event.shiftKey ? 'pan' : 'orbit';
-    dragStateRef.current = {
-      pointerId: event.pointerId,
-      mode,
-      startX: event.clientX,
-      startY: event.clientY,
-      startYaw: view.yaw,
-      startPitch: view.pitch,
-      startPanX: view.panX,
-      startPanY: view.panY,
-    };
-
     containerRef.current.setPointerCapture(event.pointerId);
+
+    if (event.pointerType === 'touch') {
+      dragStateRef.current.pointers.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+
+      if (dragStateRef.current.pointers.size === 1) {
+        beginOrbitFromPointer(event.pointerId, event.clientX, event.clientY, view, 'touch');
+        return;
+      }
+
+      if (dragStateRef.current.pointers.size >= 2) {
+        beginPinchFromPointers(view);
+      }
+
+      return;
+    }
+
+    dragStateRef.current.pointers.clear();
+    dragStateRef.current.mode = event.button === 2 || event.shiftKey ? 'pan' : 'orbit';
+    dragStateRef.current.pointerType = event.pointerType;
+    dragStateRef.current.primaryPointerId = event.pointerId;
+    dragStateRef.current.startX = event.clientX;
+    dragStateRef.current.startY = event.clientY;
+    dragStateRef.current.startYaw = view.yaw;
+    dragStateRef.current.startPitch = view.pitch;
+    dragStateRef.current.startPanX = view.panX;
+    dragStateRef.current.startPanY = view.panY;
   };
 
   const handlePointerMove = (event) => {
     if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
-    const hoverX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    const hoverY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    const isTouch = event.pointerType === 'touch';
+
+    if (isTouch && dragStateRef.current.pointers.has(event.pointerId)) {
+      dragStateRef.current.pointers.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    }
+
+    const hoverX = isTouch ? 0 : ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+    const hoverY = isTouch ? 0 : ((event.clientY - rect.top) / rect.height - 0.5) * 2;
 
     setView((current) => {
       const next = {
@@ -187,7 +248,24 @@ const Graph2D = ({ onNodeClick }) => {
         hoverY: clamp(hoverY, -1, 1),
       };
 
-      if (dragStateRef.current.pointerId !== event.pointerId) {
+      if (dragStateRef.current.mode === 'pinch' && dragStateRef.current.pointers.size >= 2) {
+        const [first, second] = Array.from(dragStateRef.current.pointers.values());
+        const centerX = (first.clientX + second.clientX) / 2;
+        const centerY = (first.clientY + second.clientY) / 2;
+        const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+        const nextZoom = clamp(
+          dragStateRef.current.startZoom * (distance / Math.max(dragStateRef.current.startDistance, 1)),
+          0.55,
+          2.6
+        );
+
+        next.zoom = nextZoom;
+        next.panX = dragStateRef.current.startPanX + (centerX - dragStateRef.current.startCenterX) / dragStateRef.current.startZoom;
+        next.panY = dragStateRef.current.startPanY + (centerY - dragStateRef.current.startCenterY) / dragStateRef.current.startZoom;
+        return next;
+      }
+
+      if (dragStateRef.current.primaryPointerId !== event.pointerId) {
         return next;
       }
 
@@ -209,12 +287,29 @@ const Graph2D = ({ onNodeClick }) => {
   const resetPointer = (event) => {
     if (!containerRef.current) return;
 
-    if (dragStateRef.current.pointerId === event.pointerId) {
+    if (containerRef.current.hasPointerCapture(event.pointerId)) {
       containerRef.current.releasePointerCapture(event.pointerId);
     }
 
-    dragStateRef.current.pointerId = null;
+    if (event.pointerType === 'touch') {
+      dragStateRef.current.pointers.delete(event.pointerId);
+
+      if (dragStateRef.current.pointers.size >= 2) {
+        beginPinchFromPointers(view);
+        return;
+      }
+
+      if (dragStateRef.current.pointers.size === 1) {
+        const [pointerId, pointer] = Array.from(dragStateRef.current.pointers.entries())[0];
+        beginOrbitFromPointer(pointerId, pointer.clientX, pointer.clientY, view, 'touch');
+        return;
+      }
+    }
+
     dragStateRef.current.mode = null;
+    dragStateRef.current.pointerType = null;
+    dragStateRef.current.primaryPointerId = null;
+    dragStateRef.current.pointers.clear();
 
     setView((current) => ({
       ...current,
@@ -241,6 +336,7 @@ const Graph2D = ({ onNodeClick }) => {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={resetPointer}
+      onPointerCancel={resetPointer}
       onPointerLeave={resetPointer}
       onContextMenu={(event) => event.preventDefault()}
       onWheel={handleWheel}
@@ -360,9 +456,9 @@ const Graph2D = ({ onNodeClick }) => {
           </div>
         </div>
         <div className="graph-controls">
-          <span>Drag to orbit</span>
-          <span>Shift + drag to pan</span>
-          <span>Wheel to zoom</span>
+          <span>Drag or swipe to orbit</span>
+          <span>Two fingers or Shift + drag to pan</span>
+          <span>Pinch or wheel to zoom</span>
         </div>
       </div>
     </div>
