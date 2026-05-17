@@ -1,145 +1,208 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Graph2D from './Graph2D';
 import InfoPanel from './InfoPanel';
 import { companiesData, personList, personToCompanies } from '../data.js';
 
-const PanelCard = ({ title, children, className = '' }) => (
-  <section className={`panel-card ${className}`}>
-    <div className="panel-title">{title}</div>
-    {children}
-  </section>
-);
+const MainPage = ({ onBackHome }) => {
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [graphCommand, setGraphCommand] = useState(null);
 
-const ExpandableNameItem = ({ item, icon, expanded, onToggle, children }) => (
-  <div className={`name-item ${expanded ? 'is-expanded' : ''}`}>
-    <button
-      type="button"
-      className="name-button"
-      onClick={onToggle}
-      aria-expanded={expanded}
-    >
-      <span className="name-bullet">{icon}</span>
-      <span className="name-button-text">{item.name}</span>
-      <span className={`name-chevron ${expanded ? 'is-open' : ''}`} aria-hidden="true">
-        v
-      </span>
-    </button>
-    {expanded ? <div className="name-dropdown">{children}</div> : null}
-  </div>
-);
+  const normalizedSearch = searchTerm.trim().toLowerCase();
 
-const NameListPanel = ({ onSelectNode }) => {
-  const [expandedPerson, setExpandedPerson] = useState(null);
-  const [expandedCompany, setExpandedCompany] = useState(null);
+  const filteredPeople = useMemo(
+    () => personList.filter((person) => person.toLowerCase().includes(normalizedSearch)),
+    [normalizedSearch]
+  );
 
-  const handlePersonToggle = (person) => {
-    const nextValue = expandedPerson === person ? null : person;
-    setExpandedPerson(nextValue);
-    onSelectNode(
-      nextValue
-        ? { type: 'person', name: person, companies: personToCompanies.get(person) || [] }
-        : null
-    );
+  const filteredCompanies = useMemo(
+    () =>
+      companiesData.filter((company) => {
+        const haystack = [
+          company.name,
+          company.type,
+          ...company.directors,
+        ].join(' ').toLowerCase();
+
+        return haystack.includes(normalizedSearch);
+      }),
+    [normalizedSearch]
+  );
+
+  const selectedNodeId = selectedNode
+    ? selectedNode.type === 'person'
+      ? `p_${selectedNode.name.replace(/\s/g, '')}`
+      : selectedNode.id
+    : null;
+
+  const exportData = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      companies: companiesData,
+      people: personList.map((person) => ({
+        name: person,
+        companies: personToCompanies.get(person) || [],
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = 'corporate-network-data.json';
+    link.click();
+    URL.revokeObjectURL(href);
   };
 
-  const handleCompanyToggle = (company) => {
-    const nextValue = expandedCompany === company.id ? null : company.id;
-    setExpandedCompany(nextValue);
-    onSelectNode(
-      nextValue
-        ? { type: 'company', name: company.name, directors: company.directors, compType: company.type }
-        : null
-    );
+  const issueGraphCommand = (type) => {
+    setGraphCommand({ type, stamp: Date.now() });
   };
 
   return (
-    <PanelCard title="Names" className="name-list-panel">
-      <div className="name-list-layout">
-        <div className="name-list-group">
-          <div className="name-group-title">Directors</div>
-          <div className="name-list-scroll">
-            {personList.map((person) => {
+    <main className="network-shell">
+      <header className="network-topbar">
+        <div className="brand-lockup">
+          <button type="button" className="brand-mark" onClick={onBackHome} aria-label="Back to home">
+            N
+          </button>
+          <div>
+            <div className="brand-title">NAAR</div>
+            <div className="brand-subtitle">Network Analysis Platform</div>
+          </div>
+        </div>
+
+        <div className="topbar-actions">
+          <label className="search-field">
+            <span className="search-field-label">Search</span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="People, companies, or type"
+            />
+          </label>
+
+          <button type="button" className="ghost-action" onClick={exportData}>
+            Export Data
+          </button>
+          <button type="button" className="ghost-action" onClick={() => issueGraphCommand('reset')}>
+            Reset View
+          </button>
+          <button type="button" className="ghost-action" onClick={onBackHome}>
+            Home
+          </button>
+        </div>
+      </header>
+
+      <section className="network-layout">
+        <aside className="panel sidebar-panel">
+          <div className="panel-header">
+            <div>
+              <h2>Directors</h2>
+              <p>Connected individuals in the directory</p>
+            </div>
+            <span className="panel-count">{filteredPeople.length}</span>
+          </div>
+
+          <div className="scroll-list">
+            {filteredPeople.map((person) => {
               const companies = personToCompanies.get(person) || [];
+              const isActive = selectedNode?.type === 'person' && selectedNode.name === person;
 
               return (
-                <ExpandableNameItem
+                <button
                   key={person}
-                  item={{ name: person }}
-                  icon="P"
-                  expanded={expandedPerson === person}
-                  onToggle={() => handlePersonToggle(person)}
+                  type="button"
+                  className={`list-card ${isActive ? 'is-active' : ''}`}
+                  onClick={() => setSelectedNode({ type: 'person', name: person, companies })}
                 >
-                  <div className="name-dropdown-label">
-                    Associated Companies ({companies.length})
+                  <div className="list-card-row">
+                    <div>
+                      <div className="list-card-title">{person}</div>
+                      <div className="list-card-meta">Director / Partner</div>
+                    </div>
+                    <span className="list-card-tag">{companies.length}</span>
                   </div>
-                  {companies.length > 0 ? (
-                    <ul className="name-dropdown-list">
-                      {companies.map((companyName) => (
-                        <li key={companyName}>{companyName}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="name-dropdown-empty">No associated companies listed.</p>
-                  )}
-                </ExpandableNameItem>
+                </button>
               );
             })}
           </div>
-        </div>
+        </aside>
 
-        <div className="name-list-group">
-          <div className="name-group-title">Companies</div>
-          <div className="name-list-scroll">
-            {companiesData.map((company) => (
-              <ExpandableNameItem
-                key={company.id}
-                item={company}
-                icon="C"
-                expanded={expandedCompany === company.id}
-                onToggle={() => handleCompanyToggle(company)}
-              >
-                <div className="name-dropdown-label">
-                  Directors / Partners ({company.directors.length})
-                </div>
-                {company.directors.length > 0 ? (
-                  <ul className="name-dropdown-list">
-                    {company.directors.map((person) => (
-                      <li key={person}>{person}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="name-dropdown-empty">No directors or partners listed.</p>
-                )}
-              </ExpandableNameItem>
-            ))}
+        <section className="panel graph-panel-shell">
+          <div className="panel-header">
+            <div>
+              <h2>Network Map</h2>
+              <p>Interactive relationship view with working search and selection</p>
+            </div>
+            <div className="graph-toolbar">
+              <button type="button" className="mini-action" onClick={() => issueGraphCommand('zoomIn')}>
+                +
+              </button>
+              <button type="button" className="mini-action" onClick={() => issueGraphCommand('zoomOut')}>
+                -
+              </button>
+              <button type="button" className="mini-action" onClick={() => issueGraphCommand('reset')}>
+                Reset
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
-    </PanelCard>
-  );
-};
 
-const MainPage = () => {
-  const [selectedNode, setSelectedNode] = useState(null);
+          <Graph2D
+            onNodeClick={setSelectedNode}
+            command={graphCommand}
+            selectedNodeId={selectedNodeId}
+            filterTerm={normalizedSearch}
+          />
+        </section>
 
-  return (
-    <main className="page-shell">
-      <aside className="sidebar sidebar-left">
-        <NameListPanel onSelectNode={setSelectedNode} />
-      </aside>
+        <aside className="panel details-panel">
+          <div className="panel-header">
+            <div>
+              <h2>Companies</h2>
+              <p>Organizations connected to the selected network</p>
+            </div>
+            <span className="panel-count">{filteredCompanies.length}</span>
+          </div>
 
-      <section className="main-content">
-        <PanelCard title="Network Map" className="graph-card">
-          <div className="graph-card-description" />
-          <Graph2D onNodeClick={setSelectedNode} />
-        </PanelCard>
+          <div className="scroll-list company-list">
+            {filteredCompanies.map((company) => {
+              const isActive = selectedNode?.type === 'company' && selectedNode.id === company.id;
+
+              return (
+                <button
+                  key={company.id}
+                  type="button"
+                  className={`company-card ${isActive ? 'is-active' : ''}`}
+                  onClick={() =>
+                    setSelectedNode({
+                      type: 'company',
+                      id: company.id,
+                      name: company.name,
+                      directors: company.directors,
+                      compType: company.type,
+                    })
+                  }
+                >
+                  <div className="company-card-head">
+                    <div className="company-card-title">{company.name}</div>
+                    <span className="company-type">{company.type}</span>
+                  </div>
+                  <div className="company-card-meta">
+                    {company.directors.length > 0
+                      ? `${company.directors.length} connected directors / partners`
+                      : 'No directors or partners listed'}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="entity-panel">
+            <InfoPanel selectedNode={selectedNode} />
+          </div>
+        </aside>
       </section>
-
-      <aside className="sidebar sidebar-right">
-        <PanelCard title="Entity Details" className="details-card">
-          <InfoPanel selectedNode={selectedNode} />
-        </PanelCard>
-      </aside>
     </main>
   );
 };

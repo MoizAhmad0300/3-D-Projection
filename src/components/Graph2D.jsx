@@ -6,7 +6,7 @@ const colorHex = (value) => `#${value.toString(16).padStart(6, '0')}`;
 const shortLabel = (text, max = 26) => (text.length > max ? `${text.slice(0, max - 3)}...` : text);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const Graph2D = ({ onNodeClick }) => {
+const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const dragStateRef = useRef({
@@ -90,6 +90,34 @@ const Graph2D = ({ onNodeClick }) => {
 
     return () => simulation.stop();
   }, [dimensions.width, dimensions.height, graphData.links, graphData.nodes]);
+
+  useEffect(() => {
+    if (!command) return;
+
+    setView((current) => {
+      if (command.type === 'zoomIn') {
+        return { ...current, zoom: clamp(current.zoom + 0.18, 0.55, 2.6) };
+      }
+
+      if (command.type === 'zoomOut') {
+        return { ...current, zoom: clamp(current.zoom - 0.18, 0.55, 2.6) };
+      }
+
+      if (command.type === 'reset') {
+        return {
+          yaw: -0.35,
+          pitch: 0.22,
+          zoom: 1,
+          panX: 0,
+          panY: 0,
+          hoverX: 0,
+          hoverY: 0,
+        };
+      }
+
+      return current;
+    });
+  }, [command]);
 
   const projected = useMemo(() => {
     const centerX = dimensions.width / 2;
@@ -328,6 +356,7 @@ const Graph2D = ({ onNodeClick }) => {
   };
 
   const labelColor = '#e2e8f0';
+  const normalizedFilter = filterTerm.toLowerCase();
 
   return (
     <div
@@ -394,7 +423,9 @@ const Graph2D = ({ onNodeClick }) => {
             const isCompany = node.type === 'company';
             const fill = isCompany ? colorHex(compColor[node.compType] || 0x64748b) : colorHex(personColor);
             const stroke = isCompany ? '#dbeafe' : '#fecdd3';
-            const active = hoveredId === node.id;
+            const active = hoveredId === node.id || selectedNodeId === node.id;
+            const matchesFilter = !normalizedFilter || node.name.toLowerCase().includes(normalizedFilter);
+            const nodeOpacity = matchesFilter ? 0.95 : 0.2;
 
             return (
               <g key={node.id}>
@@ -403,7 +434,7 @@ const Graph2D = ({ onNodeClick }) => {
                   cy={node.screenY}
                   r={node.radius * 1.7}
                   fill={fill}
-                  opacity={0.08}
+                  opacity={matchesFilter ? 0.08 : 0.03}
                 />
                 <circle
                   cx={node.screenX}
@@ -415,7 +446,7 @@ const Graph2D = ({ onNodeClick }) => {
                   onMouseEnter={() => setHoveredId(node.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   onClick={() => onNodeClick(node)}
-                  fillOpacity="0.95"
+                  fillOpacity={nodeOpacity}
                   style={{
                     cursor: 'pointer',
                     transition: 'transform 0.15s ease, filter 0.15s ease',
@@ -433,7 +464,7 @@ const Graph2D = ({ onNodeClick }) => {
                     fill={labelColor}
                     fontWeight="700"
                     pointerEvents="none"
-                    opacity={clamp(node.perspective * 0.7, 0.5, 1)}
+                    opacity={matchesFilter ? clamp(node.perspective * 0.7, 0.5, 1) : 0.24}
                   >
                     {shortLabel(node.name, 28)}
                   </text>
