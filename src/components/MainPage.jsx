@@ -1,7 +1,52 @@
 import React, { useMemo, useState } from 'react';
 import Graph2D from './Graph2D';
-import InfoPanel from './InfoPanel';
 import { companiesData, personList, personToCompanies } from '../data.js';
+
+const EntityDropdown = ({ selectedNode }) => {
+  if (!selectedNode) return null;
+
+  if (selectedNode.type === 'company') {
+    return (
+      <div className="entity-dropdown">
+        <div className="entity-dropdown-label">Entity Details</div>
+        <div className="entity-dropdown-badges">
+          <span className="entity-badge entity-badge-company">{selectedNode.compType}</span>
+          <span className="entity-badge entity-badge-neutral">{selectedNode.directors.length} linked people</span>
+        </div>
+        <div className="entity-dropdown-section">Directors / Partners</div>
+        {selectedNode.directors.length > 0 ? (
+          <ul className="entity-list">
+            {selectedNode.directors.map((person) => (
+              <li key={person}>{person}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="entity-dropdown-empty">No directors or partners listed.</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="entity-dropdown">
+      <div className="entity-dropdown-label">Entity Details</div>
+      <div className="entity-dropdown-badges">
+        <span className="entity-badge entity-badge-person">Director / Partner</span>
+        <span className="entity-badge entity-badge-neutral">{selectedNode.companies.length} linked companies</span>
+      </div>
+      <div className="entity-dropdown-section">Associated Companies</div>
+      {selectedNode.companies.length > 0 ? (
+        <ul className="entity-list">
+          {selectedNode.companies.map((company) => (
+            <li key={company}>{company}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="entity-dropdown-empty">No company relationships available.</p>
+      )}
+    </div>
+  );
+};
 
 const MainPage = ({ onBackHome }) => {
   const [selectedNode, setSelectedNode] = useState(null);
@@ -58,8 +103,15 @@ const MainPage = ({ onBackHome }) => {
     setGraphCommand({ type, stamp: Date.now() });
   };
 
+  const clearSelection = () => {
+    setSelectedNode(null);
+    issueGraphCommand('reset');
+  };
+
   return (
     <main className="network-shell">
+      {selectedNode ? <div className="graph-modal-backdrop" onClick={clearSelection} /> : null}
+
       <header className="network-topbar">
         <div className="brand-lockup">
           <button type="button" className="brand-mark" onClick={onBackHome} aria-label="Back to home">
@@ -123,17 +175,22 @@ const MainPage = ({ onBackHome }) => {
                     </div>
                     <span className="list-card-tag">{companies.length}</span>
                   </div>
+                  {isActive ? (
+                    <EntityDropdown
+                      selectedNode={{ type: 'person', name: person, companies }}
+                    />
+                  ) : null}
                 </button>
               );
             })}
           </div>
         </aside>
 
-        <section className="panel graph-panel-shell">
+        <section className={`panel graph-panel-shell${selectedNode ? ' is-graph-popup' : ''}`}>
           <div className="panel-header">
             <div>
               <h2>Network Map</h2>
-              <p>Interactive relationship view with working search and selection</p>
+              <p>{selectedNode ? 'Focused relation popup view' : 'Interactive relationship view with working search and selection'}</p>
             </div>
             <div className="graph-toolbar">
               <button type="button" className="mini-action" onClick={() => issueGraphCommand('zoomIn')}>
@@ -145,18 +202,24 @@ const MainPage = ({ onBackHome }) => {
               <button type="button" className="mini-action" onClick={() => issueGraphCommand('reset')}>
                 Reset
               </button>
+              {selectedNode ? (
+                <button type="button" className="mini-action" onClick={clearSelection}>
+                  Close
+                </button>
+              ) : null}
             </div>
           </div>
 
           <Graph2D
             onNodeClick={setSelectedNode}
             command={graphCommand}
+            selectedNode={selectedNode}
             selectedNodeId={selectedNodeId}
             filterTerm={normalizedSearch}
           />
         </section>
 
-        <aside className="panel details-panel">
+        <aside className="panel details-panel company-panel">
           <div className="panel-header">
             <div>
               <h2>Companies</h2>
@@ -193,13 +256,20 @@ const MainPage = ({ onBackHome }) => {
                       ? `${company.directors.length} connected directors / partners`
                       : 'No directors or partners listed'}
                   </div>
+                  {isActive ? (
+                    <EntityDropdown
+                      selectedNode={{
+                        type: 'company',
+                        id: company.id,
+                        name: company.name,
+                        directors: company.directors,
+                        compType: company.type,
+                      }}
+                    />
+                  ) : null}
                 </button>
               );
             })}
-          </div>
-
-          <div className="entity-panel">
-            <InfoPanel selectedNode={selectedNode} />
           </div>
         </aside>
       </section>
