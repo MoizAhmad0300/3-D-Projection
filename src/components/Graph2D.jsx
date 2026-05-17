@@ -6,7 +6,7 @@ const colorHex = (value) => `#${value.toString(16).padStart(6, '0')}`;
 const shortLabel = (text, max = 26) => (text.length > max ? `${text.slice(0, max - 3)}...` : text);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
+const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTerm = '' }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const dragStateRef = useRef({
@@ -57,9 +57,96 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
     []
   );
 
+  const focusedGraphData = useMemo(() => {
+    if (!selectedNode) return null;
+
+    if (selectedNode.type === 'company') {
+      const directors = selectedNode.directors || [];
+
+      return {
+        nodes: [
+          {
+            id: selectedNode.id,
+            name: selectedNode.name,
+            type: 'company',
+            compType: selectedNode.compType,
+            directors,
+          },
+          ...directors.map((person) => ({
+            id: `p_${person.replace(/\s/g, '')}`,
+            name: person,
+            type: 'person',
+            companies: [selectedNode.name],
+          })),
+        ],
+        links: directors.map((person) => ({
+          source: selectedNode.id,
+          target: `p_${person.replace(/\s/g, '')}`,
+        })),
+      };
+    }
+
+    const companies = (selectedNode.companies || [])
+      .map((companyName) => graphNodes.find((node) => node.type === 'company' && node.name === companyName))
+      .filter(Boolean);
+
+    return {
+      nodes: [
+        {
+          id: `p_${selectedNode.name.replace(/\s/g, '')}`,
+          name: selectedNode.name,
+          type: 'person',
+          companies: selectedNode.companies || [],
+        },
+        ...companies,
+      ],
+      links: companies.map((company) => ({
+        source: `p_${selectedNode.name.replace(/\s/g, '')}`,
+        target: company.id,
+      })),
+    };
+  }, [selectedNode]);
+
+  const activeGraphData = focusedGraphData || graphData;
+
   useEffect(() => {
+    if (focusedGraphData) {
+      const focusX = dimensions.width * 0.2;
+      const focusY = dimensions.height * 0.2;
+      const focusIsCompany = selectedNode?.type === 'company';
+      const edgeNodes = focusedGraphData.nodes.filter((node) => node.id !== selectedNodeId);
+      const columns = Math.max(Math.min(2, edgeNodes.length), 1);
+      const horizontalGap = Math.min(240, dimensions.width * 0.26);
+      const verticalGap = Math.min(150, dimensions.height * 0.24);
+
+      setNodes(
+        focusedGraphData.nodes.map((node) => {
+          if (node.id === selectedNodeId) {
+            return {
+              ...node,
+              x: focusX,
+              y: focusY + (focusIsCompany ? 10 : 50),
+              z: focusIsCompany ? 90 : -70,
+            };
+          }
+
+          const order = edgeNodes.findIndex((edgeNode) => edgeNode.id === node.id);
+          const column = order % columns;
+          const row = Math.floor(order / columns);
+
+          return {
+            ...node,
+            x: focusX + horizontalGap + column * horizontalGap,
+            y: focusY + row * verticalGap + (focusIsCompany ? 0 : 10),
+            z: focusIsCompany ? -110 : 130,
+          };
+        })
+      );
+      return;
+    }
+
     setNodes(graphData.nodes);
-  }, [graphData.nodes]);
+  }, [dimensions.height, dimensions.width, focusedGraphData, graphData.nodes, selectedNode?.type, selectedNodeId]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -74,7 +161,7 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
   }, []);
 
   useEffect(() => {
-    if (!graphData.nodes.length) return;
+    if (focusedGraphData || !graphData.nodes.length) return;
 
     const simulation = d3
       .forceSimulation(graphData.nodes)
@@ -89,7 +176,7 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
     });
 
     return () => simulation.stop();
-  }, [dimensions.width, dimensions.height, graphData.links, graphData.nodes]);
+  }, [dimensions.width, dimensions.height, focusedGraphData, graphData.links, graphData.nodes]);
 
   useEffect(() => {
     if (!command) return;
@@ -118,6 +205,21 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
       return current;
     });
   }, [command]);
+
+  useEffect(() => {
+    if (!selectedNode) return;
+
+    setView((current) => ({
+      ...current,
+      yaw: -0.08,
+      pitch: 0.04,
+      zoom: 1,
+      panX: selectedNode.type === 'company' ? 35 : 10,
+      panY: selectedNode.type === 'company' ? -30 : -18,
+      hoverX: 0,
+      hoverY: 0,
+    }));
+  }, [selectedNode]);
 
   const projected = useMemo(() => {
     const centerX = dimensions.width / 2;
@@ -163,7 +265,7 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
       })
     );
 
-    const projectedLinks = graphData.links
+    const projectedLinks = activeGraphData.links
       .map((link, index) => {
         const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
         const targetId = typeof link.target === 'object' ? link.target.id : link.target;
@@ -187,7 +289,7 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
       .sort((a, b) => a.depth - b.depth);
 
     return { projectedLinks, projectedNodes };
-  }, [dimensions.height, dimensions.width, graphData.links, nodes, view]);
+  }, [activeGraphData.links, dimensions.height, dimensions.width, nodes, view]);
 
   const beginOrbitFromPointer = (pointerId, clientX, clientY, currentView, pointerType) => {
     dragStateRef.current.mode = 'orbit';
@@ -424,7 +526,7 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
             const fill = isCompany ? colorHex(compColor[node.compType] || 0x64748b) : colorHex(personColor);
             const stroke = isCompany ? '#dbeafe' : '#fecdd3';
             const active = hoveredId === node.id || selectedNodeId === node.id;
-            const matchesFilter = !normalizedFilter || node.name.toLowerCase().includes(normalizedFilter);
+            const matchesFilter = focusedGraphData || !normalizedFilter || node.name.toLowerCase().includes(normalizedFilter);
             const nodeOpacity = matchesFilter ? 0.95 : 0.2;
 
             return (
@@ -455,7 +557,7 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
                       : 'drop-shadow(0 10px 18px rgba(15,23,42,0.45))',
                   }}
                 />
-                {(isCompany || active) && (
+                {(focusedGraphData || isCompany || active) && (
                   <text
                     x={node.screenX}
                     y={node.screenY - node.radius - 12}
@@ -485,10 +587,15 @@ const Graph2D = ({ onNodeClick, command, selectedNodeId, filterTerm = '' }) => {
             <span className="graph-legend-dot graph-legend-dot-company" />
             <span>Companies</span>
           </div>
+          {selectedNode ? (
+            <div className="graph-legend-row graph-legend-row-focus">
+              <span>Focused flow only</span>
+            </div>
+          ) : null}
         </div>
         <div className="graph-controls">
+          <span>{selectedNode ? 'Only direct links are shown' : 'Showing full network'}</span>
           <span>Drag or swipe to orbit</span>
-          <span>Two fingers or Shift + drag to pan</span>
           <span>Pinch or wheel to zoom</span>
         </div>
       </div>

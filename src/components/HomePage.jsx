@@ -18,10 +18,10 @@ const HomePage = ({ onEnterNetwork }) => (
         <div className="logo-subtitle">Barristers & Advocates</div>
       </div>
 
-      <h1 className="landing-title">Modernized network analysis with the new UI and the real relationship data behind it.</h1>
+      {/* <h1 className="landing-title">Modernized network analysis with the new UI and the real relationship data behind it.</h1>
       <p className="landing-copy">
         Explore directors, partners, and connected companies in a cleaner interface while keeping the interactive graph and entity details fully connected.
-      </p>
+      </p> */}
 
       <div className="landing-actions">
         <button type="button" className="primary-action" onClick={onEnterNetwork}>
