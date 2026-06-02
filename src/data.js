@@ -19,6 +19,10 @@ export const companiesData = [
     { id: "c16", name: "M & I MARKETING", type: "AOP", directors: ["MADIHA BASHARAT", "IRAM SHAHZADI"] },
     { id: "c17", name: "MS DIGITALS", type: "AOP", directors: ["SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
     { id: "c18", name: "A & S TRADERS", type: "AOP", directors: ["MUHAMMAD ASLAM", "SAKINA BIBI"] },
+    { id: "c20", name: "APEX", type: "AOP", directors: ["TARIQ MAHMOOD","JAVARIA RAFIQUE"]},
+    { id: "c21", name: "JAADA SCHOOLS JOHAR TOWN", type: "AOP", directors: ["USAMA NASEER","HAFIZ ALI AHMAD"]},
+    { id: "c22", name: "JAADA SCHOOLS GUJRAT", type: "AOP", directors: ["USAMA NASEER","SADAM HUSSAIN"]},
+    { id: "c23", name: "JAADA SCHOOLS MANDI BAHAUDIN", type: "AOP", directors: ["USAMA NASEER","KHURRAM"]},
     // IND Soleprop
     { id: "c19", name: "PARAGON OVERSEAS EDUCATION (IND)", type: "IND", directors: ["USAMA NASEER"] }
 ];
