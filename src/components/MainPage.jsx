@@ -1,79 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Graph2D from './Graph2D';
-import { companiesData, personList, personToCompanies } from '../data.js';
-
-const PRIMARY_GROUP = 'PARAGON GROUP';
-const DEFAULT_DASHBOARD_TAB = null;
-
-const createPersonNode = (person) => ({
-  id: `p_${person.replace(/\s/g, '')}`,
-  name: person,
-  type: 'person',
-  companies: personToCompanies.get(person) || [],
-});
-
-const findPersonNode = (person) => createPersonNode(person);
-
-const findCompanyNode = (companyId) => {
-  const company = companiesData.find((item) => item.id === companyId);
-  return company
-    ? {
-        ...company,
-        type: 'company',
-        compType: company.type,
-      }
-    : null;
-};
-
-const EntityDropdown = ({ selectedNode, anchorRef }) => {
-  if (!selectedNode) return null;
-
-  if (selectedNode.type === 'company') {
-    return (
-      <div className="entity-dropdown">
-        <div ref={anchorRef} />
-        <div className="entity-dropdown-label">Entity Relationship</div>
-        <div className="entity-dropdown-badges">
-          <span className="entity-badge entity-badge-company">{selectedNode.compType}</span>
-          <span className="entity-badge entity-badge-neutral">{selectedNode.directors.length} linked people</span>
-        </div>
-        <div className="entity-dropdown-title">{selectedNode.name}</div>
-        <div className="entity-dropdown-section">Directors / Partners</div>
-        {selectedNode.directors.length > 0 ? (
-          <ul className="entity-list">
-            {selectedNode.directors.map((person) => (
-              <li key={person}>{person}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="entity-dropdown-empty">No directors or partners listed.</p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="entity-dropdown">
-      <div ref={anchorRef} />
-      <div className="entity-dropdown-label">Entity Relationship</div>
-      <div className="entity-dropdown-badges">
-        <span className="entity-badge entity-badge-person">Director / Partner</span>
-        <span className="entity-badge entity-badge-neutral">{selectedNode.companies.length} linked companies</span>
-      </div>
-      <div className="entity-dropdown-title">{selectedNode.name}</div>
-      <div className="entity-dropdown-section">Associated Companies</div>
-      {selectedNode.companies.length > 0 ? (
-        <ul className="entity-list">
-          {selectedNode.companies.map((company) => (
-            <li key={company}>{company}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="entity-dropdown-empty">No company relationships available.</p>
-      )}
-    </div>
-  );
-};
+import InfoPanel from './InfoPanel';
+import { paragonProcessed, safariProcessed } from '../data.js';
 
 const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   useEffect(() => {
@@ -85,46 +13,58 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
     return () => window.removeEventListener('naar:toggle-light-mode', handler);
   }, [onToggleLightMode]);
 
+  const [selectedGroup, setSelectedGroup] = useState('paragon-group');
   const [selectedNode, setSelectedNode] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [graphCommand, setGraphCommand] = useState(null);
-  const [dashboardTab, setDashboardTab] = useState(DEFAULT_DASHBOARD_TAB);
-  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [dashboardTab, setDashboardTab] = useState(null);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
+
   const workspacePanelRef = useRef(null);
   const entityRelationshipRef = useRef(null);
+
+  // Switch datasets based on active selectedGroup
+  const activeDataset = useMemo(() => {
+    return selectedGroup === 'safari-group' ? safariProcessed : paragonProcessed;
+  }, [selectedGroup]);
+
+  const activeCompaniesData = activeDataset.companiesData;
+  const activePersonList = activeDataset.personList;
+  const activePersonToCompanies = activeDataset.personToCompanies;
+  const activeGraphNodes = activeDataset.graphNodes;
+  const activeLinks = activeDataset.links;
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
   const groupedCompanies = useMemo(() => {
-    const directors = new Set();
-
-    companiesData.forEach((company) => {
-      company.directors.forEach((director) => directors.add(director));
-    });
-
     return [
       {
         id: 'paragon-group',
-        label: PRIMARY_GROUP,
-        companies: companiesData,
-        directors: Array.from(directors).sort(),
+        label: 'PARAGON GROUP',
+        companies: paragonProcessed.companiesData,
+        directors: paragonProcessed.personList,
+      },
+      {
+        id: 'safari-group',
+        label: 'SAFARI GROUP',
+        companies: safariProcessed.companiesData,
+        directors: safariProcessed.personList,
       },
     ];
   }, []);
 
   const filteredCompanies = useMemo(
     () =>
-      companiesData.filter((company) => {
+      activeCompaniesData.filter((company) => {
         const haystack = [company.name, company.type, ...company.directors].join(' ').toLowerCase();
         return haystack.includes(normalizedSearch);
       }),
-    [normalizedSearch]
+    [normalizedSearch, activeCompaniesData]
   );
 
   const filteredPeople = useMemo(
-    () => personList.filter((person) => person.toLowerCase().includes(normalizedSearch)),
-    [normalizedSearch]
+    () => activePersonList.filter((person) => person.toLowerCase().includes(normalizedSearch)),
+    [normalizedSearch, activePersonList]
   );
 
   const filteredGroups = useMemo(
@@ -159,6 +99,26 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
     });
   };
 
+  const createPersonNode = (person) => ({
+    id: `p_${person.replace(/\s/g, '')}`,
+    name: person,
+    type: 'person',
+    companies: activePersonToCompanies.get(person) || [],
+  });
+
+  const findPersonNode = (person) => createPersonNode(person);
+
+  const findCompanyNode = (companyId) => {
+    const company = activeCompaniesData.find((item) => item.id === companyId);
+    return company
+      ? {
+        ...company,
+        type: 'company',
+        compType: company.type,
+      }
+      : null;
+  };
+
   const handleTabChange = (tab) => {
     if (tab === 'home') {
       onBackHome();
@@ -166,17 +126,13 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
     }
 
     if (dashboardTab === tab) {
-      setDashboardTab(DEFAULT_DASHBOARD_TAB);
-      setSelectedGroup(null);
+      setDashboardTab(null);
       setSelectedNode(null);
       issueGraphCommand('reset');
       return;
     }
 
     setDashboardTab(tab);
-    if (tab !== 'groups') {
-      setSelectedGroup(null);
-    }
 
     if (tab === 'network') {
       setSelectedNode(null);
@@ -216,11 +172,11 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   };
 
   const renderGroupOverview = () => (
-    <div className="workspace-section workspace-section-groups">
+    <div className="workspace-section workspace-section-groups animate-fade-in">
       <div className="workspace-header">
         <div>
           <h2>Groups</h2>
-          <p>Select the uploaded group to open its companies and directors in two columns.</p>
+          <p>Select a group button to load and explore its independent company-director network.</p>
         </div>
       </div>
 
@@ -229,7 +185,7 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
           <button
             key={group.id}
             type="button"
-            className={`group-card${activeGroup?.id === group.id ? ' is-active' : ''}`}
+            className={`group-card${selectedGroup === group.id ? ' is-active' : ''}`}
             onClick={() => {
               setSelectedGroup(group.id);
               setSelectedNode(null);
@@ -245,8 +201,8 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
       {activeGroup ? (
         <div className="group-detail-shell">
           <div className="workspace-subheader">
-            <h3>{activeGroup.label}</h3>
-            <p>Click any company or director to open the relationship dropdown and focus the network map.</p>
+            <h3>{activeGroup.label} Relationships</h3>
+            <p>Click any company or director to open details and focus the network map.</p>
           </div>
 
           <div className="entity-columns">
@@ -270,10 +226,10 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   );
 
   const renderFlatEntityList = (title, description, items, type) => (
-    <div className="workspace-section">
+    <div className="workspace-section animate-fade-in">
       <div className="workspace-header">
         <div>
-          <h2>{title}</h2>
+          <h2>{title} ({activeGroup?.label || ''})</h2>
           <p>{description}</p>
         </div>
       </div>
@@ -364,7 +320,14 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
               </div>
             </div>
 
-            <EntityDropdown selectedNode={selectedNode} anchorRef={entityRelationshipRef} />
+            <div ref={entityRelationshipRef} className="workspace-panel-details-wrapper">
+              <InfoPanel
+                selectedNode={selectedNode}
+                onSelectEntity={handleEntitySelect}
+                companiesData={activeCompaniesData}
+                personToCompanies={activePersonToCompanies}
+              />
+            </div>
 
             {dashboardTab === 'groups' && renderGroupOverview()}
 
@@ -402,7 +365,7 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
         <aside className={`panel graph-panel-shell graph-panel-shell-static${graphFullscreen ? ' is-graph-popup' : ''}`}>
           <div className="workspace-subheader workspace-subheader-graph">
             <div className="graph-panel-title-block">
-              <h3>Network Map</h3>
+              <h3>Network Map ({activeGroup?.label || ''})</h3>
               <p>{selectedNode ? 'Showing the selected entity and direct relationships.' : 'Showing the full connected network.'}</p>
             </div>
             <div className="graph-panel-actions">
@@ -429,12 +392,14 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
             </div>
           </div>
           <Graph2D
-            onNodeClick={setSelectedNode}
+            onNodeClick={handleEntitySelect}
             command={graphCommand}
             selectedNode={selectedNode}
             selectedNodeId={selectedNodeId}
             filterTerm={normalizedSearch}
             forceLabels={graphFullscreen}
+            customNodes={activeGraphNodes}
+            customLinks={activeLinks}
           />
         </aside>
       </section>

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { graphNodes, links, compColor, personColor } from '../data.js';
+import { compColor, personColor } from '../data.js';
 
 const colorHex = (value) => `#${value.toString(16).padStart(6, '0')}`;
 const shortLabel = (text, max = 26) => (text.length > max ? `${text.slice(0, max - 3)}...` : text);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTerm = '', forceLabels = false }) => {
+const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTerm = '', forceLabels = false, customNodes = [], customLinks = [] }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const dragStateRef = useRef({
@@ -41,8 +41,8 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
 
   const graphData = useMemo(
     () => ({
-      nodes: graphNodes.map((node, index) => {
-        const angle = (index / graphNodes.length) * Math.PI * 2;
+      nodes: customNodes.map((node, index) => {
+        const angle = (index / customNodes.length) * Math.PI * 2;
         const depthBand = node.type === 'company' ? 150 : -110;
 
         return {
@@ -52,9 +52,9 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
           z: depthBand + Math.sin(angle * 2.7) * 90 + Math.cos(angle * 1.8) * 50,
         };
       }),
-      links: links.map((link) => ({ ...link })),
+      links: customLinks.map((link) => ({ ...link })),
     }),
-    []
+    [customNodes, customLinks]
   );
 
   const focusedGraphData = useMemo(() => {
@@ -87,7 +87,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
     }
 
     const companies = (selectedNode.companies || [])
-      .map((companyName) => graphNodes.find((node) => node.type === 'company' && node.name === companyName))
+      .map((companyName) => customNodes.find((node) => node.type === 'company' && node.name === companyName))
       .filter(Boolean);
 
     return {
@@ -105,7 +105,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
         target: company.id,
       })),
     };
-  }, [selectedNode]);
+  }, [customNodes, selectedNode]);
 
   const activeGraphData = focusedGraphData || graphData;
 
@@ -113,32 +113,31 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
     if (focusedGraphData) {
       const focusIsCompany = selectedNode?.type === 'company';
       const edgeNodes = focusedGraphData.nodes.filter((node) => node.id !== selectedNodeId);
+      const popupMode = forceLabels;
 
       const layoutNodes = (() => {
         if (!edgeNodes.length) {
           return focusedGraphData.nodes.map((node) => ({
             ...node,
-            x: dimensions.width / 2,
-            y: dimensions.height / 2,
-            z: node.id === selectedNodeId ? 90 : 0,
+            x: popupMode ? Math.min(Math.max(dimensions.width * 0.12, 120), 190) : dimensions.width / 2,
+            y: popupMode ? Math.min(Math.max(dimensions.height * 0.18, 96), 140) : dimensions.height / 2,
+            z: popupMode ? 0 : node.id === selectedNodeId ? 90 : 0,
           }));
         }
 
-        if (focusIsCompany) {
-          const topMargin = Math.max(110, dimensions.height * 0.16);
-          const bottomMargin = Math.max(90, dimensions.height * 0.14);
-          const sideMargin = Math.max(100, dimensions.width * 0.1);
-          const selectedX = dimensions.width / 2;
-          const selectedY = topMargin;
-          const availableWidth = Math.max(dimensions.width - sideMargin * 2, 220);
-          const availableHeight = Math.max(dimensions.height - topMargin - bottomMargin, 180);
-          const preferredCols = Math.ceil(Math.sqrt(edgeNodes.length));
-          const columns = Math.max(1, Math.min(preferredCols, edgeNodes.length, 4));
+        if (popupMode) {
+          const selectedX = Math.min(Math.max(dimensions.width * 0.12, 120), 190);
+          const selectedY = Math.min(Math.max(dimensions.height * 0.18, 96), 140);
+          const leftGap = selectedNode?.type === 'company' ? 240 : 270;
+          const rightMargin = 120;
+          const bottomMargin = 120;
+          const childStartX = Math.min(selectedX + leftGap, dimensions.width - rightMargin);
+          const availableWidth = Math.max(dimensions.width - childStartX - rightMargin, 240);
+          const availableHeight = Math.max(dimensions.height - selectedY - bottomMargin, 220);
+          const columns = Math.max(1, Math.min(edgeNodes.length, Math.floor(availableWidth / 240) + 1, 5));
           const rows = Math.ceil(edgeNodes.length / columns);
-          const xGap = columns > 1 ? availableWidth / (columns - 1) : 0;
-          const blockHeight = rows > 1 ? Math.min(availableHeight, (rows - 1) * 120) : 0;
-          const startY = selectedY + 95 + Math.max((availableHeight - blockHeight) / 2, 20);
-          const yGap = rows > 1 ? blockHeight / (rows - 1) : 0;
+          const xGap = columns > 1 ? Math.min(availableWidth / (columns - 1), 280) : 0;
+          const yGap = rows > 1 ? Math.min(availableHeight / (rows - 1), 145) : 0;
 
           return focusedGraphData.nodes.map((node) => {
             if (node.id === selectedNodeId) {
@@ -146,7 +145,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
                 ...node,
                 x: selectedX,
                 y: selectedY,
-                z: 95,
+                z: 0,
               };
             }
 
@@ -156,9 +155,44 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
 
             return {
               ...node,
-              x: sideMargin + column * xGap,
-              y: startY + row * yGap,
-              z: -95 + (row % 2) * 20,
+              x: childStartX + column * xGap,
+              y: selectedY + row * yGap,
+              z: 0,
+            };
+          });
+        }
+
+        if (focusIsCompany) {
+          const sideMargin = Math.max(96, dimensions.width * 0.08);
+          const topMargin = Math.max(86, dimensions.height * 0.14);
+          const bottomMargin = Math.max(86, dimensions.height * 0.14);
+          const selectedX = dimensions.width / 2;
+          const selectedY = dimensions.height / 2;
+          const availableWidth = Math.max(dimensions.width - sideMargin * 2, 260);
+          const availableHeight = Math.max(dimensions.height - topMargin - bottomMargin, 220);
+          const radiusX = Math.min(availableWidth * 0.34, 280);
+          const radiusY = Math.min(availableHeight * 0.34, 190);
+
+          return focusedGraphData.nodes.map((node) => {
+            if (node.id === selectedNodeId) {
+              return {
+                ...node,
+                x: selectedX,
+                y: selectedY,
+                z: 110,
+              };
+            }
+
+            const order = edgeNodes.findIndex((edgeNode) => edgeNode.id === node.id);
+            const angle = edgeNodes.length === 1
+              ? Math.PI / 2
+              : -Math.PI / 2 + ((order + 1) / edgeNodes.length) * Math.PI * 2;
+
+            return {
+              ...node,
+              x: selectedX + Math.cos(angle) * radiusX,
+              y: selectedY + Math.sin(angle) * radiusY,
+              z: -90 + (order % 2) * 24,
             };
           });
         }
@@ -211,7 +245,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
     }
 
     setNodes(graphData.nodes);
-  }, [dimensions.height, dimensions.width, focusedGraphData, graphData.nodes, selectedNode?.type, selectedNodeId]);
+  }, [dimensions.height, dimensions.width, focusedGraphData, forceLabels, graphData.nodes, selectedNode?.type, selectedNodeId]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -274,6 +308,20 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
   useEffect(() => {
     if (!selectedNode) return;
 
+    if (forceLabels) {
+      setView((current) => ({
+        ...current,
+        yaw: 0,
+        pitch: 0,
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        hoverX: 0,
+        hoverY: 0,
+      }));
+      return;
+    }
+
     setView((current) => ({
       ...current,
       yaw: -0.08,
@@ -284,7 +332,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
       hoverX: 0,
       hoverY: 0,
     }));
-  }, [selectedNode]);
+  }, [forceLabels, selectedNode]);
 
   const projected = useMemo(() => {
     const centerX = dimensions.width / 2;
@@ -294,8 +342,8 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
     const sinPitch = Math.sin(view.pitch);
     const cosPitch = Math.cos(view.pitch);
     const cameraDepth = 880;
-    const hoverTiltX = view.hoverX * 30;
-    const hoverTiltY = view.hoverY * 18;
+    const hoverTiltX = forceLabels && focusedGraphData ? 0 : view.hoverX * 30;
+    const hoverTiltY = forceLabels && focusedGraphData ? 0 : view.hoverY * 18;
 
     const nodeMap = new Map(
       nodes.map((node) => {
@@ -354,7 +402,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
       .sort((a, b) => a.depth - b.depth);
 
     return { projectedLinks, projectedNodes };
-  }, [activeGraphData.links, dimensions.height, dimensions.width, nodes, view]);
+  }, [activeGraphData.links, dimensions.height, dimensions.width, focusedGraphData, forceLabels, nodes, view]);
 
   const beginOrbitFromPointer = (pointerId, clientX, clientY, currentView, pointerType) => {
     dragStateRef.current.mode = 'orbit';
@@ -628,13 +676,13 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
                     x={node.screenX}
                     y={node.screenY - node.radius - 12}
                     textAnchor="middle"
-                    fontSize={clamp(node.radius * 0.72, 11, 15)}
+                    fontSize={clamp(node.radius * 0.62, 10, 13)}
                     fill={labelColor}
                     fontWeight="700"
                     pointerEvents="none"
                     opacity={matchesFilter ? clamp(node.perspective * 0.7, 0.5, 1) : 0.24}
                   >
-                    {shortLabel(node.name, forceLabels || focusedGraphData ? 40 : 28)}
+                    {shortLabel(node.name, forceLabels || focusedGraphData ? 34 : 28)}
                   </text>
                 )}
               </g>
