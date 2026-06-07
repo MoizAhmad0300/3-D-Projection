@@ -1512,16 +1512,26 @@ button {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, 0.4);
+  background: color-mix(in srgb, var(--background) 84%, transparent);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(160, 174, 201, 0.2);
+  background: linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 58%, var(--background-panel)),
+      color-mix(in srgb, var(--primary-dark) 58%, var(--background-panel)));
   border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(160, 174, 201, 0.4);
+  background: linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 78%, var(--primary-light)),
+      color-mix(in srgb, var(--primary-dark) 78%, var(--primary)));
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--primary) 62%, var(--background-panel)) color-mix(in srgb, var(--background) 84%, transparent);
 }
 
 /* ── Light-theme overrides for InfoPanel ── */
