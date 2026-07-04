@@ -641,7 +641,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
             const active = hoveredId === node.id || selectedNodeId === node.id;
             const matchesFilter = focusedGraphData || !normalizedFilter || node.name.toLowerCase().includes(normalizedFilter);
             const nodeOpacity = matchesFilter ? 0.95 : 0.2;
-            const showLabel = Boolean(forceLabels || focusedGraphData || active);
+            const showLabel = Boolean(forceLabels || focusedGraphData || active || (normalizedFilter && matchesFilter));
 
             return (
               <g key={node.id}>

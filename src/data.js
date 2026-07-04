@@ -1,13 +1,13 @@
 // Data derived from USAMA NASEER COMPANIES.xlsx and Safari Group upload
 
 export const companiesData = [
-    { id: "c1", name: "PARAGON OVERSEAS ECUCATION PRIVATE LTD", type: "PVT", directors: ["USAMA NASEER", "ATIF ASLAM"] },
+    { id: "c1", name: "PARAGON OVERSEAS EDUCATION PRIVATE LTD", type: "PVT", directors: ["USAMA NASEER", "ATIF ASLAM"] },
     { id: "c2", name: "PARAGON OVERSEAS EDUCATION (PVT) LIMITED STAFF PROVIDENT FUND", type: "PVT", directors: [] },
     { id: "c3", name: "PARAGON GLOBAL SERVICES PVT LTD", type: "PVT", directors: ["USAMA NASEER", "ATIF ASLAM", "ANAS ABDULLAH", "SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
-    { id: "c4", name: "JAADA SCHOOL PRIVATE LIMITED", type: "PVT", directors: ["USAMA NASEER", "ROMESA MAIAM", "SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
+    { id: "c4", name: "JAADA SCHOOL PRIVATE LIMITED", type: "PVT", directors: ["USAMA NASEER", "ROMESA MARIAM", "SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
     { id: "c5", name: "PROSUME SOLAR ENERGY (PVT) LTD", type: "PVT", directors: ["USAMA NASEER", "MUHAMMAD KHUBAIB"] },
     { id: "c6", name: "DEV MONDIALE PVT LTD", type: "PVT", directors: ["USAMA NASEER", "MASHOOD NOMAN", "ARSLAN AHMAD"] },
-    { id: "c7", name: "JAADA EDUCATIONAL SERVICES (FOUNDATION)", type: "PVT", directors: ["ANAS ABDULLAH", "ROMESA MAIAM", "HAMNA AHMAD"] },
+    { id: "c7", name: "JAADA EDUCATIONAL SERVICES (FOUNDATION)", type: "PVT", directors: ["ANAS ABDULLAH", "ROMESA MARIAM", "HAMNA AHMAD"] },
     // AOP group
     { id: "c8", name: "JAADA EDUCATIONAL SERVICES", type: "AOP", directors: ["USAMA NASEER", "NASEER AHMED", "MIAN IZHAR UL HAQ"] },
     { id: "c9", name: "JAADA EDUCATIONAL NETWORK", type: "AOP", directors: ["USAMA NASEER", "ATIF ASLAM", "SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
@@ -20,12 +20,16 @@ export const companiesData = [
     { id: "c16", name: "M & I MARKETING", type: "AOP", directors: ["MADIHA BASHARAT", "IRAM SHAHZADI"] },
     { id: "c17", name: "MS DIGITALS", type: "AOP", directors: ["SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
     { id: "c18", name: "A & S TRADERS", type: "AOP", directors: ["MUHAMMAD ASLAM", "SAKINA BIBI"] },
-    { id: "c20", name: "APEX", type: "AOP", directors: ["TARIQ MAHMOOD","JAVARIA RAFIQUE"]},
+    { id: "c20", name: "APEX MARKETING", type: "AOP", directors: ["TARIQ MAHMOOD","JAVARIA RAFIQUE"]},
     { id: "c21", name: "JAADA SCHOOLS JOHAR TOWN", type: "AOP", directors: ["USAMA NASEER","HAFIZ ALI AHMAD"]},
-    { id: "c22", name: "JAADA SCHOOLS GUJRAT", type: "AOP", directors: ["USAMA NASEER","SADAM HUSSAIN"]},
+    { id: "c22", name: "JAADA SCHOOLS GUJRAT", type: "AOP", directors: ["USAMA NASEER","SADDAM HUSSAIN"]},
     { id: "c23", name: "JAADA SCHOOLS MANDI BAHAUDIN", type: "AOP", directors: ["USAMA NASEER","KHURRAM"]},
     // IND Soleprop
-    { id: "c19", name: "PARAGON OVERSEAS EDUCATION (IND)", type: "IND", directors: ["USAMA NASEER"] }
+    { id: "c19", name: "PARAGON OVERSEAS EDUCATION (IND)", type: "IND", directors: ["USAMA NASEER"] },
+    { id: "c24", name: "CAPPED PRIVATE LIMITED", type: "PVT", directors: ["USAMA NASEER", "TAHIRA ZAINEB"] },
+    { id: "c25", name: "TWO ONE WINGS PRIVATE LIMITED", type: "PVT", directors: ["USAMA NASEER", "TAHIRA ZAINEB"] },
+    { id: "c26", name: "RISE PROTEIN FARM", type: "AOP", directors: ["USAMA NASEER", "MUHAMMAD IMRAN GORAYA", "LUQMAN SHAHZAD"] },
+    { id: "c27", name: "BUZZWORKS MEDIA SOLUTIONS", type: "AOP", directors: ["MUHAMMAD AZAZ", "HAFIZ ALI AHMAD"] }
 ];
 
 export const safariCompaniesData = [
@@ -42,6 +46,7 @@ export const safariCompaniesData = [
     { id: "c30", name: "SAFARI GARDEN FILLING STATION", type: "AOP", directors: ["MUHAMMAD ARSLAN", "REHANA KAUSAR AMJAD", "ANUM AMJAD"] },
     { id: "c31", name: "LAL DIN SONS", type: "AOP", directors: ["MUHAMMAD ARSLAN", "AMJAD MANZOOR HUSSAIN"] },
     { id: "c32", name: "SENTIMENTO HOME FOUNDATION", type: "AOP", directors: ["ANUM AMJAD", "MUHAMMAD ARSLAN", "MARYAM IBTISAM", "MARYAM JAVED"] },
+
     { id: "c33", name: "7 STAR TRADERS", type: "IND", directors: ["MUHAMMAD ARSLAN"] }
 ];
 

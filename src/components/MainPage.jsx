@@ -3,6 +3,17 @@ import Graph2D from './Graph2D';
 import InfoPanel from './InfoPanel';
 import { paragonProcessed, safariProcessed } from '../data.js';
 
+const matchesCompanySearch = (company, normalizedSearch) => {
+  if (!normalizedSearch) return true;
+  const haystack = [company.name, company.type, ...company.directors].join(' ').toLowerCase();
+  return haystack.includes(normalizedSearch);
+};
+
+const matchesPersonSearch = (person, normalizedSearch) => {
+  if (!normalizedSearch) return true;
+  return person.toLowerCase().includes(normalizedSearch);
+};
+
 const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   useEffect(() => {
     const handler = () => {
@@ -54,16 +65,12 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   }, []);
 
   const filteredCompanies = useMemo(
-    () =>
-      activeCompaniesData.filter((company) => {
-        const haystack = [company.name, company.type, ...company.directors].join(' ').toLowerCase();
-        return haystack.includes(normalizedSearch);
-      }),
+    () => activeCompaniesData.filter((company) => matchesCompanySearch(company, normalizedSearch)),
     [normalizedSearch, activeCompaniesData]
   );
 
   const filteredPeople = useMemo(
-    () => activePersonList.filter((person) => person.toLowerCase().includes(normalizedSearch)),
+    () => activePersonList.filter((person) => matchesPersonSearch(person, normalizedSearch)),
     [normalizedSearch, activePersonList]
   );
 
@@ -90,6 +97,12 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
 
   const issueGraphCommand = (type) => {
     setGraphCommand({ type, stamp: Date.now() });
+  };
+
+  const handleGroupSelect = (groupId) => {
+    setSelectedGroup(groupId);
+    setSelectedNode(null);
+    issueGraphCommand('reset');
   };
 
   const handleEntitySelect = (node) => {
@@ -186,11 +199,7 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
             key={group.id}
             type="button"
             className={`group-card${selectedGroup === group.id ? ' is-active' : ''}`}
-            onClick={() => {
-              setSelectedGroup(group.id);
-              setSelectedNode(null);
-              issueGraphCommand('reset');
-            }}
+            onClick={() => handleGroupSelect(group.id)}
           >
             <span className="group-card-title">{group.label}</span>
             <span className="group-card-meta">{group.companies.length} companies | {group.directors.length} directors</span>
@@ -224,6 +233,70 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
       ) : null}
     </div>
   );
+
+  const renderSearchResults = () => {
+    const hasResults = filteredGroups.length > 0 || filteredCompanies.length > 0 || filteredPeople.length > 0;
+
+    return (
+      <div className="workspace-section animate-fade-in">
+        <div className="workspace-header">
+          <div>
+            <h2>Search Results</h2>
+            <p>Showing matches for "{searchTerm.trim()}" in {activeGroup?.label || 'the active group'}.</p>
+          </div>
+        </div>
+
+        {hasResults ? (
+          <>
+            {filteredGroups.length > 0 ? (
+              <div className="group-grid">
+                {filteredGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    className={`group-card${selectedGroup === group.id ? ' is-active' : ''}`}
+                    onClick={() => handleGroupSelect(group.id)}
+                  >
+                    <span className="group-card-title">{group.label}</span>
+                    <span className="group-card-meta">{group.companies.length} companies | {group.directors.length} directors</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="entity-columns">
+              <section className="entity-column">
+                <div className="entity-column-header">Companies</div>
+                <div className="entity-column-scroll">
+                  {filteredCompanies.length > 0 ? (
+                    filteredCompanies.map((company) => renderEntityButton(company, 'company'))
+                  ) : (
+                    <p className="entity-panel-empty-text">No matching companies in the active group.</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="entity-column">
+                <div className="entity-column-header">Directors</div>
+                <div className="entity-column-scroll">
+                  {filteredPeople.length > 0 ? (
+                    filteredPeople.map((person) => renderEntityButton(person, 'person'))
+                  ) : (
+                    <p className="entity-panel-empty-text">No matching directors in the active group.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+          </>
+        ) : (
+          <div className="entity-panel-empty">
+            <div className="entity-panel-title">No Matches</div>
+            <p>Try a company name, director name, company type, or group name.</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderFlatEntityList = (title, description, items, type) => (
     <div className="workspace-section animate-fade-in">
@@ -329,33 +402,39 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
               />
             </div>
 
-            {dashboardTab === 'groups' && renderGroupOverview()}
+            {normalizedSearch ? (
+              renderSearchResults()
+            ) : (
+              <>
+                {dashboardTab === 'groups' && renderGroupOverview()}
 
-            {dashboardTab === 'companies' &&
-              renderFlatEntityList(
-                'Companies',
-                'Select a company to open its relationship details and focus the network map.',
-                filteredCompanies,
-                'company'
-              )}
+                {dashboardTab === 'companies' &&
+                  renderFlatEntityList(
+                    'Companies',
+                    'Select a company to open its relationship details and focus the network map.',
+                    filteredCompanies,
+                    'company'
+                  )}
 
-            {dashboardTab === 'directors' &&
-              renderFlatEntityList(
-                'Directors',
-                'Select a director to open connected companies and update the graph on the right.',
-                filteredPeople,
-                'person'
-              )}
+                {dashboardTab === 'directors' &&
+                  renderFlatEntityList(
+                    'Directors',
+                    'Select a director to open connected companies and update the graph on the right.',
+                    filteredPeople,
+                    'person'
+                  )}
 
-            {dashboardTab === 'network' && (
-              <div className="workspace-section">
-                <div className="workspace-header">
-                  <div>
-                    <h2>Network Map</h2>
-                    <p>Select a company or director from another section to view its mapped relationships on the right.</p>
+                {dashboardTab === 'network' && (
+                  <div className="workspace-section">
+                    <div className="workspace-header">
+                      <div>
+                        <h2>Network Map</h2>
+                        <p>Select a company or director from another section to view its mapped relationships on the right.</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </div>
         </section>
