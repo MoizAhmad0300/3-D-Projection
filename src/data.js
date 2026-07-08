@@ -98,6 +98,42 @@ export const graphNodes = paragonProcessed.graphNodes;
 export const links = paragonProcessed.links;
 export const nodeMap = paragonProcessed.nodeMap;
 
+// Entity Folder Structure - Maps entity names to their folder hierarchies
+// Scalable structure: add new entities as needed
+export const entityFolders = {
+  // Default folder structure for all entities
+  DEFAULT: {
+    name: "DEFAULT",
+    folders: [
+      { name: "Appeal", icon: "📋" },
+      { name: "Chamber", icon: "🏛️" },
+      { name: "FBR Income Tax", icon: "💰" },
+      { name: "FBR Sales Tax", icon: "📊" },
+      { name: "SECP", icon: "🏢" },
+      { name: "IPO", icon: "📈" },
+      { name: "Other Documents", icon: "📁" }
+    ]
+  }
+};
+
+// Helper function to get folders for an entity
+// Returns default folders for any entity (company or person)
+export function getEntityFolders(entityName) {
+  // If specific entity config exists, use it
+  if (entityFolders[entityName]) {
+    return {
+      name: entityName,
+      folders: entityFolders[entityName].folders
+    };
+  }
+  
+  // Otherwise return default folders for any entity
+  return {
+    name: entityName,
+    folders: entityFolders.DEFAULT.folders
+  };
+}
+
 // Color mapping for company types
 export const compColor = {
     'PVT': 0x3a86ff,   // vivid blue

@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
+import FolderView from './FolderView';
+import { getEntityFolders } from '../data';
 
 const InfoPanel = ({ selectedNode, onSelectEntity, companiesData, personToCompanies }) => {
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [selectedFolderEntity, setSelectedFolderEntity] = useState(null);
+
+  const handleOpenFolder = (entityName) => {
+    setSelectedFolderEntity(entityName);
+    setShowFolderModal(true);
+  };
   if (!selectedNode) {
     return (
       <div className="entity-panel-empty">
@@ -43,6 +52,8 @@ const InfoPanel = ({ selectedNode, onSelectEntity, companiesData, personToCompan
         ? 'Association of Persons'
         : 'Individual / Sole Proprietorship';
 
+    const entityFolders = getEntityFolders(selectedNode.name);
+
     return (
       <div className="entity-panel-content animate-fade-in">
         <div className="entity-panel-title">Entity Details</div>
@@ -62,7 +73,7 @@ const InfoPanel = ({ selectedNode, onSelectEntity, companiesData, personToCompan
         {directors.length > 0 ? (
           <ul className="entity-interactive-list">
             {directors.map((person) => (
-              <li key={person}>
+              <li key={person} className="entity-list-item">
                 <button
                   type="button"
                   className="entity-pivot-btn"
@@ -72,17 +83,38 @@ const InfoPanel = ({ selectedNode, onSelectEntity, companiesData, personToCompan
                   <span className="pivot-btn-name">{person}</span>
                   <span className="pivot-btn-icon">→</span>
                 </button>
+                <button
+                  type="button"
+                  className="entity-folder-icon-btn"
+                  onClick={() => handleOpenFolder(person)}
+                  title={`View documents for ${person}`}
+                  aria-label="View documents"
+                >
+                  📁
+                </button>
               </li>
             ))}
           </ul>
         ) : (
           <p className="entity-panel-empty-text">No directors or partners are listed for this company.</p>
         )}
+
+        {showFolderModal && selectedFolderEntity && (
+          <FolderView
+            entityName={selectedFolderEntity}
+            folders={getEntityFolders(selectedFolderEntity)}
+            onClose={() => {
+              setShowFolderModal(false);
+              setSelectedFolderEntity(null);
+            }}
+          />
+        )}
       </div>
     );
   }
 
   const companies = selectedNode.companies || [];
+  const entityFolders = getEntityFolders(selectedNode.name);
 
   return (
     <div className="entity-panel-content animate-fade-in">
@@ -103,7 +135,7 @@ const InfoPanel = ({ selectedNode, onSelectEntity, companiesData, personToCompan
       {companies.length > 0 ? (
         <ul className="entity-interactive-list">
           {companies.map((company) => (
-            <li key={company}>
+            <li key={company} className="entity-list-item">
               <button
                 type="button"
                 className="entity-pivot-btn"
@@ -113,11 +145,31 @@ const InfoPanel = ({ selectedNode, onSelectEntity, companiesData, personToCompan
                 <span className="pivot-btn-name">{company}</span>
                 <span className="pivot-btn-icon">→</span>
               </button>
+              <button
+                type="button"
+                className="entity-folder-icon-btn"
+                onClick={() => handleOpenFolder(company)}
+                title={`View documents for ${company}`}
+                aria-label="View documents"
+              >
+                📁
+              </button>
             </li>
           ))}
         </ul>
       ) : (
         <p className="entity-panel-empty-text">No company relationships are available for this person.</p>
+      )}
+
+      {showFolderModal && selectedFolderEntity && (
+        <FolderView
+          entityName={selectedFolderEntity}
+          folders={getEntityFolders(selectedFolderEntity)}
+          onClose={() => {
+            setShowFolderModal(false);
+            setSelectedFolderEntity(null);
+          }}
+        />
       )}
     </div>
   );
