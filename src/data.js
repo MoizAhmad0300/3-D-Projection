@@ -46,15 +46,12 @@ export const safariCompaniesData = [
 ];
 
 // Park Lane Group 
-export const parklanecompaniesdata =[
-      { id: "c34", name: "PLATINUM LIFE (PRIVATE) LIMITED", type: "Private Limited", directors: ["Samran Salik","Tayyab Iftikhar","Muhammad Ashfaq","Irfan Elahi","Ehsan Elahi","Iftikhar Ahmed Virk","Muhammad Faiz Sami"] },
-      { id: "c35", name: "Park Lane City", type: "AOP", directors: ["Samran Salik","Tayyab Iftikhar"] },
-      { id: "c36", name: "Park Lane Services", type: "Aop", directors: ["Samran Salik","Tayyab Iftikhar"] },
-      { id: "c37", name: "Platinum Builders And Developers", type: "Aop", directors: ["Samran Salik","Tayyab Iftikhar"] },
-
-
-
-]
+export const parklaneCompaniesData = [
+      { id: "c34", name: "PLATINUM LIFE (PRIVATE) LIMITED", type: "PVT", directors: ["SAMRAN SALIK", "TAYYAB IFTIKHAR", "MUHAMMAD ASHFAQ", "IRFAN ELAHI", "EHSAN ELAHI", "IFTIKHAR AHMED VIRK", "MUHAMMAD FAIZ SAMI"] },
+      { id: "c35", name: "PARK LANE CITY", type: "AOP", directors: ["SAMRAN SALIK", "TAYYAB IFTIKHAR"] },
+      { id: "c36", name: "PARK LANE SERVICES", type: "AOP", directors: ["SAMRAN SALIK", "TAYYAB IFTIKHAR"] },
+      { id: "c37", name: "PLATINUM BUILDERS AND DEVELOPERS", type: "AOP", directors: ["SAMRAN SALIK", "TAYYAB IFTIKHAR"] },
+];
 
 // Helper to process raw companies list into normalized structures
 export function processGroupData(companies) {
@@ -98,7 +95,7 @@ export function processGroupData(companies) {
 // Process Paragon and Safari groups separately
 export const paragonProcessed = processGroupData(companiesData);
 export const safariProcessed = processGroupData(safariCompaniesData);
-export const parklaneProcessed = processGroupData(parklanecompaniesdata);
+export const parklaneProcessed = processGroupData(parklaneCompaniesData);
 
 // Maintain backward compatibility exports for other components that might directly import them
 export const personToCompanies = paragonProcessed.personToCompanies;

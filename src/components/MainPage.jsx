@@ -24,13 +24,12 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   const entityRelationshipRef = useRef(null);
 
   // Switch datasets based on active selectedGroup
-const activeDataset = useMemo(() => {
-  return selectedGroup === 'safari-group'
-    ? safariProcessed
-    : selectedGroup === 'parklane-group'
-    ? parklaneProcessed
-    : paragonProcessed;
-}, [selectedGroup, safariProcessed, parklaneProcessed, paragonProcessed]);
+  const activeDataset = useMemo(() => {
+    if (selectedGroup === 'safari-group') return safariProcessed;
+    if (selectedGroup === 'parklane-group') return parklaneProcessed;
+    return paragonProcessed;
+  }, [selectedGroup]);
+  
   const activeCompaniesData = activeDataset.companiesData;
   const activePersonList = activeDataset.personList;
   const activePersonToCompanies = activeDataset.personToCompanies;
@@ -54,8 +53,8 @@ const activeDataset = useMemo(() => {
         directors: safariProcessed.personList,
       },
       {
-        id: 'park lane-group',
-        label: 'Park Lane GROUP',
+        id: 'parklane-group',
+        label: 'PARK LANE GROUP',
         companies: parklaneProcessed.companiesData,
         directors: parklaneProcessed.personList,
       },
