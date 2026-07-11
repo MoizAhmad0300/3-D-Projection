@@ -45,6 +45,17 @@ export const safariCompaniesData = [
     { id: "c33", name: "7 STAR TRADERS", type: "IND", directors: ["MUHAMMAD ARSLAN"] }
 ];
 
+// Park Lane Group 
+export const parklanecompaniesdata =[
+      { id: "c34", name: "PLATINUM LIFE (PRIVATE) LIMITED", type: "Private Limited", directors: ["Samran Salik","Tayyab Iftikhar","Muhammad Ashfaq","Irfan Elahi","Ehsan Elahi","Iftikhar Ahmed Virk","Muhammad Faiz Sami"] },
+      { id: "c35", name: "Park Lane City", type: "AOP", directors: ["Samran Salik","Tayyab Iftikhar"] },
+      { id: "c36", name: "Park Lane Services", type: "Aop", directors: ["Samran Salik","Tayyab Iftikhar"] },
+      { id: "c37", name: "Platinum Builders And Developers", type: "Aop", directors: ["Samran Salik","Tayyab Iftikhar"] },
+
+
+
+]
+
 // Helper to process raw companies list into normalized structures
 export function processGroupData(companies) {
     const personToCompanies = new Map();
@@ -87,6 +98,7 @@ export function processGroupData(companies) {
 // Process Paragon and Safari groups separately
 export const paragonProcessed = processGroupData(companiesData);
 export const safariProcessed = processGroupData(safariCompaniesData);
+export const parklaneProcessed = processGroupData(parklanecompaniesdata);
 
 // Maintain backward compatibility exports for other components that might directly import them
 export const personToCompanies = paragonProcessed.personToCompanies;

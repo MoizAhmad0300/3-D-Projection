@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Graph2D from './Graph2D';
 import InfoPanel from './InfoPanel';
-import { paragonProcessed, safariProcessed } from '../data.js';
+import { paragonProcessed, safariProcessed, parklaneProcessed } from '../data.js';
 
 const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   useEffect(() => {
@@ -24,10 +24,13 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   const entityRelationshipRef = useRef(null);
 
   // Switch datasets based on active selectedGroup
-  const activeDataset = useMemo(() => {
-    return selectedGroup === 'safari-group' ? safariProcessed : paragonProcessed;
-  }, [selectedGroup]);
-
+const activeDataset = useMemo(() => {
+  return selectedGroup === 'safari-group'
+    ? safariProcessed
+    : selectedGroup === 'parklane-group'
+    ? parklaneProcessed
+    : paragonProcessed;
+}, [selectedGroup, safariProcessed, parklaneProcessed, paragonProcessed]);
   const activeCompaniesData = activeDataset.companiesData;
   const activePersonList = activeDataset.personList;
   const activePersonToCompanies = activeDataset.personToCompanies;
@@ -49,6 +52,12 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
         label: 'SAFARI GROUP',
         companies: safariProcessed.companiesData,
         directors: safariProcessed.personList,
+      },
+      {
+        id: 'park lane-group',
+        label: 'Park Lane GROUP',
+        companies: parklaneProcessed.companiesData,
+        directors: parklaneProcessed.personList,
       },
     ];
   }, []);
