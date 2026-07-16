@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Graph2D from './Graph2D';
 import InfoPanel from './InfoPanel';
-import { paragonProcessed, safariProcessed, parklaneProcessed } from '../data.js';
+import { paragonProcessed, safariProcessed, parklaneProcessed, perfectumProcessed, sindhuProcessed } from '../data.js';
 
 const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   useEffect(() => {
@@ -27,6 +27,8 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   const activeDataset = useMemo(() => {
     if (selectedGroup === 'safari-group') return safariProcessed;
     if (selectedGroup === 'parklane-group') return parklaneProcessed;
+    if (selectedGroup === 'perfectum-group') return perfectumProcessed;
+    if (selectedGroup === 'sindhu-group') return sindhuProcessed;
     return paragonProcessed;
   }, [selectedGroup]);
   
@@ -57,6 +59,18 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
         label: 'PARK LANE GROUP',
         companies: parklaneProcessed.companiesData,
         directors: parklaneProcessed.personList,
+      },
+      {
+        id: 'perfectum-group',
+        label: 'PERFECTUM GROUP',
+        companies: perfectumProcessed.companiesData,
+        directors: perfectumProcessed.personList,
+      },
+      {
+        id: 'sindhu-group',
+        label: 'SINDHU GROUP',
+        companies: sindhuProcessed.companiesData,
+        directors: sindhuProcessed.personList,
       },
     ];
   }, []);
@@ -189,21 +203,28 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
       </div>
 
       <div className="group-grid">
-        {filteredGroups.map((group) => (
-          <button
-            key={group.id}
-            type="button"
-            className={`group-card${selectedGroup === group.id ? ' is-active' : ''}`}
-            onClick={() => {
-              setSelectedGroup(group.id);
-              setSelectedNode(null);
-              issueGraphCommand('reset');
-            }}
-          >
-            <span className="group-card-title">{group.label}</span>
-            <span className="group-card-meta">{group.companies.length} companies | {group.directors.length} directors</span>
-          </button>
-        ))}
+        {filteredGroups.map((group) => {
+          const isActive = selectedGroup === group.id;
+
+          return (
+            <button
+              key={group.id}
+              type="button"
+              className={`group-card${isActive ? ' is-active' : ''}`}
+              aria-pressed={isActive}
+              onClick={() => {
+                setSelectedGroup(group.id);
+                setSelectedNode(null);
+                issueGraphCommand('reset');
+              }}
+            >
+              <span className="group-card-title">{group.label}</span>
+              <span className="group-card-meta group-card-stats">
+                {group.companies.length} companies | {group.directors.length} directors
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {activeGroup ? (
