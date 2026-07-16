@@ -58,9 +58,9 @@ export const perfectumCompaniesData = [
       { id: "c40", name: "MONTORO HOMES (PRIVATE) LIMITED", type: "PVT", directors: ["SHABBIR HUSSAIN", "AISHA SHAUKAT","NARMEEN ROOHI"] },
 ];
 export const sindhuCompaniesData = [
-      { id: "c40", name: "SINDHU GELLERIA (PRIVATE) LIMITED", type: "PVT", directors: ["MUHAMMAD AMJAD", "AYSHA AMJAD"] },
-      { id: "c39", name: "GALLANT BUILDERS & DEVELOPERS (PRIVATE) LIMITED", type: "PVT", directors: ["MUHAMMAD AMJAD", "AYSHA AMJAD", "TANVEER ABBAS"] },
-      { id: "c40", name: "HAMMAD TRADERS", type: "AOP", directors: ["MUHAMMAD AMJAD", "NAZIR HUSSAIN"] },
+      { id: "c41", name: "SINDHU GELLERIA (PRIVATE) LIMITED", type: "PVT", directors: ["MUHAMMAD AMJAD", "AYSHA AMJAD"] },
+      { id: "c42", name: "GALLANT BUILDERS & DEVELOPERS (PRIVATE) LIMITED", type: "PVT", directors: ["MUHAMMAD AMJAD", "AYSHA AMJAD", "TANVEER ABBAS"] },
+      { id: "c43", name: "HAMMAD TRADERS", type: "AOP", directors: ["MUHAMMAD AMJAD", "NAZIR HUSSAIN"] },
 ];
 
 // Helper to process raw companies list into normalized structures
