@@ -709,6 +709,17 @@ button {
   line-height: 1.45;
 }
 
+.group-card-stats {
+  opacity: 0.28;
+  filter: blur(3px);
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.group-card.is-active .group-card-stats {
+  opacity: 1;
+  filter: blur(0);
+}
+
 .group-detail-shell {
   display: flex;
   flex-direction: column;

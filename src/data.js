@@ -52,6 +52,16 @@ export const parklaneCompaniesData = [
       { id: "c36", name: "PARK LANE SERVICES", type: "AOP", directors: ["SAMRAN SALIK", "TAYYAB IFTIKHAR"] },
       { id: "c37", name: "PLATINUM BUILDERS AND DEVELOPERS", type: "AOP", directors: ["SAMRAN SALIK", "TAYYAB IFTIKHAR"] },
 ];
+export const perfectumCompaniesData = [
+      { id: "c38", name: "PERFECTUM (PRIVATE) LIMITED", type: "PVT", directors: ["SHABBIR HUSSAIN", "AISHA SHAUKAT"] },
+      { id: "c39", name: "NEHAT (PRIVATE) LIMITED", type: "PVT", directors: ["SHABBIR HUSSAIN", "AISHA SHAUKAT"] },
+      { id: "c40", name: "MONTORO HOMES (PRIVATE) LIMITED", type: "PVT", directors: ["SHABBIR HUSSAIN", "AISHA SHAUKAT","NARMEEN ROOHI"] },
+];
+export const sindhuCompaniesData = [
+      { id: "c40", name: "SINDHU GELLERIA (PRIVATE) LIMITED", type: "PVT", directors: ["MUHAMMAD AMJAD", "AYSHA AMJAD"] },
+      { id: "c39", name: "GALLANT BUILDERS & DEVELOPERS (PRIVATE) LIMITED", type: "PVT", directors: ["MUHAMMAD AMJAD", "AYSHA AMJAD", "TANVEER ABBAS"] },
+      { id: "c40", name: "HAMMAD TRADERS", type: "AOP", directors: ["MUHAMMAD AMJAD", "NAZIR HUSSAIN"] },
+];
 
 // Helper to process raw companies list into normalized structures
 export function processGroupData(companies) {
@@ -96,6 +106,9 @@ export function processGroupData(companies) {
 export const paragonProcessed = processGroupData(companiesData);
 export const safariProcessed = processGroupData(safariCompaniesData);
 export const parklaneProcessed = processGroupData(parklaneCompaniesData);
+export const perfectumProcessed = processGroupData(perfectumCompaniesData);
+export const sindhuProcessed = processGroupData(sindhuCompaniesData);
+
 
 // Maintain backward compatibility exports for other components that might directly import them
 export const personToCompanies = paragonProcessed.personToCompanies;
