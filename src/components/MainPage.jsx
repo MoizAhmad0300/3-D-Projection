@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Graph2D from './Graph2D';
 import InfoPanel from './InfoPanel';
-import { paragonProcessed, safariProcessed, parklaneProcessed, perfectumProcessed, sindhuProcessed } from '../data.js';
+import { buildProcessedGroups, getAccessibleGroups, normalizeEmail } from '../data.js';
 
-const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
+const MainPage = ({ onBackHome, onOpenAdmin, onToggleLightMode, lightMode, database, activeEmail, onActiveEmailChange }) => {
   useEffect(() => {
     const handler = () => {
       if (typeof onToggleLightMode === 'function') onToggleLightMode();
@@ -22,15 +22,35 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
 
   const workspacePanelRef = useRef(null);
   const entityRelationshipRef = useRef(null);
+  const accessibleGroups = useMemo(
+    () => getAccessibleGroups(database, activeEmail),
+    [database, activeEmail]
+  );
+  const processedGroups = useMemo(() => buildProcessedGroups(accessibleGroups), [accessibleGroups]);
+
+  useEffect(() => {
+    if (accessibleGroups.length === 0) {
+      setSelectedGroup('');
+      setSelectedNode(null);
+      return;
+    }
+
+    if (!accessibleGroups.some((group) => group.id === selectedGroup)) {
+      setSelectedGroup(accessibleGroups[0].id);
+      setSelectedNode(null);
+    }
+  }, [accessibleGroups, selectedGroup]);
 
   // Switch datasets based on active selectedGroup
   const activeDataset = useMemo(() => {
-    if (selectedGroup === 'safari-group') return safariProcessed;
-    if (selectedGroup === 'parklane-group') return parklaneProcessed;
-    if (selectedGroup === 'perfectum-group') return perfectumProcessed;
-    if (selectedGroup === 'sindhu-group') return sindhuProcessed;
-    return paragonProcessed;
-  }, [selectedGroup]);
+    return processedGroups[selectedGroup] || {
+      companiesData: [],
+      personToCompanies: new Map(),
+      personList: [],
+      graphNodes: [],
+      links: [],
+    };
+  }, [processedGroups, selectedGroup]);
   
   const activeCompaniesData = activeDataset.companiesData;
   const activePersonList = activeDataset.personList;
@@ -41,39 +61,14 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
   const groupedCompanies = useMemo(() => {
-    return [
-      {
-        id: 'paragon-group',
-        label: 'PARAGON GROUP',
-        companies: paragonProcessed.companiesData,
-        directors: paragonProcessed.personList,
-      },
-      {
-        id: 'safari-group',
-        label: 'SAFARI GROUP',
-        companies: safariProcessed.companiesData,
-        directors: safariProcessed.personList,
-      },
-      {
-        id: 'parklane-group',
-        label: 'PARK LANE GROUP',
-        companies: parklaneProcessed.companiesData,
-        directors: parklaneProcessed.personList,
-      },
-      {
-        id: 'perfectum-group',
-        label: 'PERFECTUM GROUP',
-        companies: perfectumProcessed.companiesData,
-        directors: perfectumProcessed.personList,
-      },
-      {
-        id: 'sindhu-group',
-        label: 'SINDHU GROUP',
-        companies: sindhuProcessed.companiesData,
-        directors: sindhuProcessed.personList,
-      },
-    ];
-  }, []);
+    return accessibleGroups.map((group) => ({
+      id: group.id,
+      label: group.label,
+      description: group.description,
+      companies: group.companies,
+      directors: processedGroups[group.id]?.personList || [],
+    }));
+  }, [accessibleGroups, processedGroups]);
 
   const filteredCompanies = useMemo(
     () =>
@@ -103,6 +98,10 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
     if (!selectedGroup) return null;
     return groupedCompanies.find((group) => group.id === selectedGroup) || null;
   }, [groupedCompanies, selectedGroup]);
+  const activeUser = useMemo(
+    () => database.users.find((user) => normalizeEmail(user.email) === normalizeEmail(activeEmail)),
+    [database.users, activeEmail]
+  );
 
   const selectedNodeId = selectedNode
     ? selectedNode.type === 'person'
@@ -282,6 +281,17 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
         </div>
 
         <div className="topbar-actions">
+          <label className="search-field active-email-field">
+            <span className="search-field-label">Access email</span>
+            <input
+              type="email"
+              value={activeEmail}
+              onChange={(event) => onActiveEmailChange(event.target.value)}
+              placeholder="email@example.com"
+              autoComplete="off"
+            />
+          </label>
+
           <label className="search-field">
             <span className="search-field-label">Search</span>
             <input
@@ -298,6 +308,9 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
           <button type="button" className="ghost-action" onClick={clearSelection}>
             Clear Selection
           </button>
+          <button type="button" className="ghost-action" onClick={onOpenAdmin}>
+            Admin
+          </button>
           <button
             type="button"
             className="ghost-action light-toggle"
@@ -310,6 +323,15 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
         </div>
       </header>
 
+      {accessibleGroups.length === 0 ? (
+        <section className="network-access-empty panel">
+          <h1>No Groups Assigned</h1>
+          <p>{activeUser ? 'This user is active but has no allowed groups yet.' : 'This email is not registered in the admin panel.'}</p>
+          <button type="button" className="primary-action" onClick={onOpenAdmin}>
+            Open Admin Panel
+          </button>
+        </section>
+      ) : (
       <section className="network-layout dashboard-layout">
         <aside className="panel sidebar-panel dashboard-sidebar">
           <div className="dashboard-sidebar-header">
@@ -432,6 +454,7 @@ const MainPage = ({ onBackHome, onToggleLightMode, lightMode }) => {
           />
         </aside>
       </section>
+      )}
     </main>
   );
 };

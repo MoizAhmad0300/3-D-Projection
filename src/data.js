@@ -20,10 +20,10 @@ export const companiesData = [
     { id: "c16", name: "M & I MARKETING", type: "AOP", directors: ["MADIHA BASHARAT", "IRAM SHAHZADI"] },
     { id: "c17", name: "MS DIGITALS", type: "AOP", directors: ["SADDAM HUSSAIN", "MUHAMMAD AMOAZ AKRAM"] },
     { id: "c18", name: "A & S TRADERS", type: "AOP", directors: ["MUHAMMAD ASLAM", "SAKINA BIBI"] },
-    { id: "c20", name: "APEX", type: "AOP", directors: ["TARIQ MAHMOOD","JAVARIA RAFIQUE"]},
-    { id: "c21", name: "JAADA SCHOOLS JOHAR TOWN", type: "AOP", directors: ["USAMA NASEER","HAFIZ ALI AHMAD"]},
-    { id: "c22", name: "JAADA SCHOOLS GUJRAT", type: "AOP", directors: ["USAMA NASEER","SADAM HUSSAIN"]},
-    { id: "c23", name: "JAADA SCHOOLS MANDI BAHAUDIN", type: "AOP", directors: ["USAMA NASEER","KHURRAM"]},
+    { id: "p20", name: "APEX", type: "AOP", directors: ["TARIQ MAHMOOD","JAVARIA RAFIQUE"]},
+    { id: "p21", name: "JAADA SCHOOLS JOHAR TOWN", type: "AOP", directors: ["USAMA NASEER","HAFIZ ALI AHMAD"]},
+    { id: "p22", name: "JAADA SCHOOLS GUJRAT", type: "AOP", directors: ["USAMA NASEER","SADAM HUSSAIN"]},
+    { id: "p23", name: "JAADA SCHOOLS MANDI BAHAUDIN", type: "AOP", directors: ["USAMA NASEER","KHURRAM"]},
     // IND Soleprop
     { id: "c19", name: "PARAGON OVERSEAS EDUCATION (IND)", type: "IND", directors: ["USAMA NASEER"] }
 ];
@@ -100,6 +100,175 @@ export function processGroupData(companies) {
         links,
         nodeMap
     };
+}
+
+export const defaultGroups = [
+    {
+        id: 'paragon-group',
+        label: 'PARAGON GROUP',
+        description: 'Corporate and education network',
+        companies: companiesData,
+    },
+    {
+        id: 'safari-group',
+        label: 'SAFARI GROUP',
+        description: 'Real estate and ventures network',
+        companies: safariCompaniesData,
+    },
+    {
+        id: 'parklane-group',
+        label: 'PARK LANE GROUP',
+        description: 'Park Lane corporate network',
+        companies: parklaneCompaniesData,
+    },
+    {
+        id: 'perfectum-group',
+        label: 'PERFECTUM GROUP',
+        description: 'Perfectum corporate network',
+        companies: perfectumCompaniesData,
+    },
+    {
+        id: 'sindhu-group',
+        label: 'SINDHU GROUP',
+        description: 'Sindhu corporate network',
+        companies: sindhuCompaniesData,
+    },
+];
+
+export const defaultUsers = [
+    {
+        id: 'u-super-admin',
+        name: 'Super Admin',
+        email: 'admin@naar.local',
+        role: 'super_admin',
+        allowedGroupIds: defaultGroups.map((group) => group.id),
+        active: true,
+    },
+];
+
+export const databaseVersion = 1;
+export const databaseStorageKey = 'naar-admin-database-v1';
+export const activeEmailStorageKey = 'naar-active-email';
+
+export function createDefaultDatabase() {
+    return {
+        version: databaseVersion,
+        groups: defaultGroups.map((group) => ({
+            ...group,
+            companies: group.companies.map((company) => ({
+                ...company,
+                directors: [...company.directors],
+            })),
+        })),
+        users: defaultUsers.map((user) => ({
+            ...user,
+            allowedGroupIds: [...user.allowedGroupIds],
+        })),
+        auditLog: [
+            {
+                id: 'audit-seed',
+                actorEmail: 'system',
+                action: 'seed_database',
+                createdAt: new Date().toISOString(),
+            },
+        ],
+    };
+}
+
+export function normalizeId(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+export function normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+}
+
+export function normalizeCompany(company, fallbackIndex = 0) {
+    const name = String(company?.name || '').trim();
+    const type = String(company?.type || 'PVT').trim().toUpperCase();
+    const directors = Array.isArray(company?.directors)
+        ? company.directors.map((person) => String(person).trim()).filter(Boolean)
+        : String(company?.directors || '')
+            .split(',')
+            .map((person) => person.trim())
+            .filter(Boolean);
+
+    return {
+        id: company?.id || `company-${normalizeId(name) || fallbackIndex}`,
+        name,
+        type,
+        directors,
+    };
+}
+
+export function normalizeDatabase(candidate) {
+    const fallback = createDefaultDatabase();
+    const groups = Array.isArray(candidate?.groups) && candidate.groups.length > 0
+        ? candidate.groups
+        : fallback.groups;
+    const users = Array.isArray(candidate?.users) && candidate.users.length > 0
+        ? candidate.users
+        : fallback.users;
+
+    return {
+        version: databaseVersion,
+        groups: groups.map((group, groupIndex) => {
+            const label = String(group?.label || group?.name || `Group ${groupIndex + 1}`).trim();
+            const id = group?.id || `${normalizeId(label)}-${groupIndex + 1}`;
+
+            return {
+                id,
+                label,
+                description: String(group?.description || '').trim(),
+                companies: Array.isArray(group?.companies)
+                    ? group.companies.map((company, companyIndex) => normalizeCompany(company, companyIndex))
+                    : [],
+            };
+        }),
+        users: users.map((user, userIndex) => ({
+            id: user?.id || `user-${userIndex + 1}`,
+            name: String(user?.name || '').trim(),
+            email: normalizeEmail(user?.email),
+            role: user?.role === 'super_admin' ? 'super_admin' : 'viewer',
+            allowedGroupIds: Array.isArray(user?.allowedGroupIds) ? user.allowedGroupIds : [],
+            active: user?.active !== false,
+        })).filter((user) => user.email),
+        auditLog: Array.isArray(candidate?.auditLog) ? candidate.auditLog : fallback.auditLog,
+    };
+}
+
+
+
+export function getActiveEmail() {
+    if (typeof window === 'undefined') return defaultUsers[0].email;
+    return normalizeEmail(window.localStorage.getItem(activeEmailStorageKey)) || defaultUsers[0].email;
+}
+
+export function setActiveEmail(email) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(activeEmailStorageKey, normalizeEmail(email));
+    window.dispatchEvent(new CustomEvent('naar:active-email-updated', { detail: normalizeEmail(email) }));
+}
+
+export function getAccessibleGroups(database, email) {
+    const normalizedEmail = normalizeEmail(email);
+    const user = database.users.find((item) => normalizeEmail(item.email) === normalizedEmail && item.active);
+    if (!user) return [];
+    if (user.role === 'super_admin') return database.groups;
+
+    const allowed = new Set(user.allowedGroupIds);
+    return database.groups.filter((group) => allowed.has(group.id));
+}
+
+export function buildProcessedGroups(groups) {
+    return groups.reduce((accumulator, group) => {
+        accumulator[group.id] = processGroupData(group.companies);
+        return accumulator;
+    }, {});
 }
 
 // Process Paragon and Safari groups separately

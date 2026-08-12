@@ -1,0 +1,2 @@
+id,name,email,role,allowed_group_ids,active,created_at
+"u-super-admin","Super Admin","admin@naar.local","super_admin","{""paragon-group"",""safari-group"",""parklane-group"",""perfectum-group"",""sindhu-group""}",true,2026-08-01T02:19:06.307Z
