@@ -48,7 +48,8 @@ export async function loadDatabaseFromSupabase() {
             email: user.email,
             role: user.role,
             allowedGroupIds: user.allowed_group_ids || [],
-            active: user.active
+            active: user.active,
+            canDownload: user.can_download !== false,
         }));
 
         const reconstructedAudit = auditLogData.map(log => ({
@@ -97,7 +98,8 @@ export async function saveDatabaseToSupabase(database) {
         email: u.email,
         role: u.role,
         allowed_group_ids: u.allowedGroupIds,
-        active: u.active
+        active: u.active,
+        can_download: u.canDownload !== false,
     }));
 
     const auditLogs = database.auditLog.map(log => ({

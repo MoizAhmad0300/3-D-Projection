@@ -143,6 +143,7 @@ export const defaultUsers = [
         role: 'super_admin',
         allowedGroupIds: defaultGroups.map((group) => group.id),
         active: true,
+        canDownload: true,
     },
 ];
 
@@ -236,6 +237,7 @@ export function normalizeDatabase(candidate) {
             role: user?.role === 'super_admin' ? 'super_admin' : 'viewer',
             allowedGroupIds: Array.isArray(user?.allowedGroupIds) ? user.allowedGroupIds : [],
             active: user?.active !== false,
+            canDownload: user?.canDownload !== false,
         })).filter((user) => user.email),
         auditLog: Array.isArray(candidate?.auditLog) ? candidate.auditLog : fallback.auditLog,
     };

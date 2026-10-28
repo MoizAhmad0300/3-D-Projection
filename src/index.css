@@ -1,7 +1,7 @@
 /* Theme variables */
 :root {
-  --primary: #7c3aed;
-  --primary-dark: #4f46e5;
+  --primary: #5F2057;
+  --primary-dark: #5F2057;
   --primary-light: #fff;
   --background: #0a1020;
   --background-panel: rgba(8, 13, 26, 0.8);
@@ -12,8 +12,8 @@
 }
 
 .light-theme {
-  --primary: #7c3aed;
-  --primary-dark: #4f46e5;
+  --primary: #5F2057;
+  --primary-dark: #5F2057;
   --primary-light: #fff;
   --background: #f5f3ff;
   --background-panel: rgba(255, 255, 255, 0.88);
@@ -140,7 +140,7 @@ body,
 
 .light-theme .dashboard-nav-vertical .nav-item:hover,
 .light-theme .dashboard-nav-vertical .nav-item.active {
-  background: linear-gradient(135deg, #8c56f0, #5c49e7);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   color: #fff;
 }
 
@@ -406,7 +406,7 @@ button {
   padding: 16px 28px;
   border-radius: 18px;
   color: #fff;
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   box-shadow: 0 18px 40px rgba(93, 60, 201, 0.38);
   cursor: pointer;
 }
@@ -458,7 +458,7 @@ button {
   border-radius: 12px;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(135deg, #7c3aed, #4338ca);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   box-shadow: 0 10px 30px rgba(92, 69, 190, 0.36);
 }
 
@@ -622,7 +622,7 @@ button {
   height: 40px;
   min-width: 40px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #7c3aed, #4338ca);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   color: #fff;
   font-weight: 800;
   font-size: 1.1rem;
@@ -863,7 +863,7 @@ button {
 }
 
 .adm-btn-primary {
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   color: #fff;
   box-shadow: 0 6px 20px rgba(93, 60, 201, 0.3);
 }
@@ -932,7 +932,7 @@ button {
   height: 32px;
   min-width: 32px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   color: #fff;
   font-weight: 700;
   font-size: 0.8rem;
@@ -1011,7 +1011,7 @@ button {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
 }
 
-.adm-stat-purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.adm-stat-purple::before { background: linear-gradient(90deg, #5F2057, #5F2057); }
 .adm-stat-blue::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
 .adm-stat-teal::before { background: linear-gradient(90deg, #14b8a6, #5eead4); }
 .adm-stat-amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
@@ -1117,7 +1117,7 @@ button {
 }
 
 .adm-dot-purple {
-  background: #7c3aed;
+  background: #5F2057;
   box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
 }
 
@@ -1142,7 +1142,7 @@ button {
   height: 8px;
   min-width: 8px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   margin-top: 6px;
 }
 
@@ -1233,7 +1233,7 @@ button {
 .adm-checkbox-item input {
   width: 16px;
   height: 16px;
-  accent-color: #7c3aed;
+  accent-color: #5F2057;
 }
 
 .adm-checkbox-label {
@@ -1574,7 +1574,7 @@ button {
 }
 
 .adm-perm-toggle-on {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
 }
 
 .adm-perm-toggle-knob {
@@ -1627,7 +1627,7 @@ button {
 }
 
 .adm-audit-dot-latest {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #5F2057, #5F2057);
   box-shadow: 0 0 10px rgba(124, 58, 237, 0.4);
 }
 
@@ -3112,9 +3112,60 @@ button {
 
 .light-theme .entity-folder-icon-btn {
   background: rgba(124, 58, 237, 0.08);
-  color: #7c3aed;
+  color: #5F2057;
 }
 
 .light-theme .entity-folder-icon-btn:hover {
   background: rgba(124, 58, 237, 0.16);
+}
+
+:root,
+.light-theme {
+  --primary: #5F2057;
+  --primary-dark: #5F2057;
+  --primary-light: #fff;
+}
+
+.primary-action,
+.brand-mark,
+.adm-sidebar-logo,
+.adm-btn-primary,
+.adm-user-avatar,
+.adm-perm-toggle-on,
+.adm-audit-dot-latest,
+.folder-view-action-btn,
+.landing-orb-left,
+.adm-dot-purple,
+.entity-folder-icon-btn:hover {
+  background: #5F2057;
+}
+
+.primary-action:hover,
+.adm-btn-primary:hover,
+.folder-view-action-btn:hover,
+.folder-view-action-btn:active {
+  background: #5F2057;
+}
+
+.nav-item:hover,
+.nav-item.active,
+.dashboard-nav-vertical .nav-item:hover,
+.dashboard-nav-vertical .nav-item.active,
+.adm-perm-toggle-on,
+.entity-folder-icon-btn:hover {
+  background-color: #5F2057;
+  color: #fff;
+}
+
+.adm-stat-purple::before,
+.adm-stat-blue::before,
+.adm-stat-teal::before,
+.adm-stat-amber::before {
+  background: #5F2057;
+}
+
+.light-theme .network-shell,
+.light-theme .company-logo-panel,
+.light-theme .graph-panel {
+  background: #fff;
 }

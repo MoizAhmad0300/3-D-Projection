@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Graph2D from './Graph2D';
 import InfoPanel from './InfoPanel';
+import DownloadModal from './DownloadModal';
 import { buildProcessedGroups, getAccessibleGroups, normalizeEmail } from '../data.js';
 
 const MainPage = ({ onBackHome, onOpenAdmin, onToggleLightMode, lightMode, database, activeEmail, onActiveEmailChange }) => {
@@ -19,6 +20,7 @@ const MainPage = ({ onBackHome, onOpenAdmin, onToggleLightMode, lightMode, datab
   const [graphCommand, setGraphCommand] = useState(null);
   const [dashboardTab, setDashboardTab] = useState(null);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   const workspacePanelRef = useRef(null);
   const entityRelationshipRef = useRef(null);
@@ -308,6 +310,17 @@ const MainPage = ({ onBackHome, onOpenAdmin, onToggleLightMode, lightMode, datab
           <button type="button" className="ghost-action" onClick={clearSelection}>
             Clear Selection
           </button>
+          {/* Download button — visible to users with canDownload permission */}
+          {(activeUser?.canDownload !== false) && accessibleGroups.length > 0 && (
+            <button
+              type="button"
+              className="ghost-action dl-topbar-btn"
+              onClick={() => setShowDownloadModal(true)}
+              title="Download group data as Excel"
+            >
+              ⬇️ Download
+            </button>
+          )}
           <button type="button" className="ghost-action" onClick={onOpenAdmin}>
             Admin
           </button>
@@ -454,6 +467,14 @@ const MainPage = ({ onBackHome, onOpenAdmin, onToggleLightMode, lightMode, datab
           />
         </aside>
       </section>
+      )}
+
+      {/* Download Modal */}
+      {showDownloadModal && (
+        <DownloadModal
+          groups={accessibleGroups}
+          onClose={() => setShowDownloadModal(false)}
+        />
       )}
     </main>
   );

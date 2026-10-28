@@ -588,14 +588,14 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
       <svg ref={svgRef} viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <radialGradient id="canvasGradient" cx="50%" cy="20%" r="90%">
-            <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.32" />
-            <stop offset="35%" stopColor="#0f172a" stopOpacity="0.98" />
-            <stop offset="100%" stopColor="#020617" stopOpacity="1" />
+            <stop offset="0%" stopColor="#5F2057" stopOpacity="0.32" />
+            <stop offset="35%" stopColor="#000" stopOpacity="0.98" />
+            <stop offset="100%" stopColor="#000" stopOpacity="1" />
           </radialGradient>
           <linearGradient id="beamGradient" x1="0%" x2="100%" y1="0%" y2="100%">
-            <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.15" />
-            <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.12" />
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.15" />
+            <stop offset="50%" stopColor="#5F2057" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#5F2057" stopOpacity="0.12" />
           </linearGradient>
         </defs>
 
@@ -637,7 +637,7 @@ const Graph2D = ({ onNodeClick, command, selectedNode, selectedNodeId, filterTer
           {projected.projectedNodes.map((node) => {
             const isCompany = node.type === 'company';
             const fill = isCompany ? colorHex(compColor[node.compType] || 0x64748b) : colorHex(personColor);
-            const stroke = isCompany ? '#dbeafe' : '#fecdd3';
+            const stroke = isCompany ? '#fff' : '#5F2057';
             const active = hoveredId === node.id || selectedNodeId === node.id;
             const matchesFilter = focusedGraphData || !normalizedFilter || node.name.toLowerCase().includes(normalizedFilter);
             const nodeOpacity = matchesFilter ? 0.95 : 0.2;

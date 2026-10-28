@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import '../download.css';
+import { downloadGroupAsExcel } from '../downloadExcel';
 import { buildProcessedGroups, createDefaultDatabase, normalizeEmail, normalizeId } from '../data';
 
 const blankGroup = { label: '', description: '' };
 const blankCompany = { groupId: '', name: '', type: 'PVT', directors: '' };
-const blankUser = { name: '', email: '', role: 'viewer', allowedGroupIds: [] };
+const blankUser = { name: '', email: '', role: 'viewer', allowedGroupIds: [], canDownload: true };
 
 const createAuditEntry = (actorEmail, action) => ({
   id: `audit-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -19,6 +21,7 @@ const NAV_ITEMS = [
   { id: 'users', label: 'Users', icon: '👥' },
   { id: 'permissions', label: 'Permissions', icon: '🔐' },
   { id: 'audit', label: 'Audit Log', icon: '📋' },
+  { id: 'download', label: 'Download Data', icon: '⬇️' },
 ];
 
 const formatDate = (iso) => {
@@ -45,10 +48,21 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
   const [showUserForm, setShowUserForm] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // Download section state
+  const [dlGroupId, setDlGroupId] = useState(database.groups[0]?.id || '');
+  const [dlColumns, setDlColumns] = useState({ name: true, type: true, groupName: true, directors: true });
+
   const processedGroups = useMemo(() => buildProcessedGroups(database.groups), [database.groups]);
   const selectedUser = database.users.find((user) => user.id === selectedUserId) || database.users[0];
   const activeAdmin = database.users.find((user) => normalizeEmail(user.email) === normalizeEmail(activeEmail));
   const canAdmin = activeAdmin?.role === 'super_admin';
+
+  // Determine which groups the active user can download
+  const downloadableGroups = useMemo(() => {
+    if (!activeAdmin) return [];
+    if (activeAdmin.role === 'super_admin') return database.groups;
+    return database.groups.filter(g => activeAdmin.allowedGroupIds.includes(g.id));
+  }, [activeAdmin, database.groups]);
 
   const totalCompanies = useMemo(() => database.groups.reduce((t, g) => t + g.companies.length, 0), [database.groups]);
   const totalDirectors = useMemo(() => {
@@ -196,6 +210,7 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
         ? database.groups.map((group) => group.id)
         : userForm.allowedGroupIds,
       active: true,
+      canDownload: userForm.canDownload !== false,
     };
 
     const nextDatabase = {
@@ -218,6 +233,7 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
       email: user.email,
       role: user.role,
       allowedGroupIds: [...user.allowedGroupIds],
+      canDownload: user.canDownload !== false,
     });
     setEditingUserId(user.id);
     setShowUserForm(true);
@@ -255,6 +271,20 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
         ),
       },
       `Updated group access for ${selectedUser.email}`
+    );
+  };
+
+  const toggleSelectedUserDownload = () => {
+    if (!selectedUser) return;
+    const newVal = !selectedUser.canDownload;
+    saveWithAudit(
+      {
+        ...database,
+        users: database.users.map((user) =>
+          user.id === selectedUser.id ? { ...user, canDownload: newVal } : user
+        ),
+      },
+      `${newVal ? 'Granted' : 'Revoked'} download permission for ${selectedUser.email}`
     );
   };
 
@@ -598,6 +628,17 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
               </div>
             </div>
           )}
+          <div className="adm-form-access">
+            <span className="adm-input-label">Permissions</span>
+            <label className="adm-checkbox-item">
+              <input
+                type="checkbox"
+                checked={userForm.canDownload !== false}
+                onChange={() => setUserForm({ ...userForm, canDownload: !userForm.canDownload })}
+              />
+              <span className="adm-checkbox-label">Can Download Group Data (XLSX)</span>
+            </label>
+          </div>
           <div className="adm-form-actions">
             <button type="submit" className="adm-btn adm-btn-primary">{editingUserId ? 'Update User' : 'Create User'}</button>
             <button type="button" className="adm-btn adm-btn-ghost" onClick={() => { setShowUserForm(false); setUserForm(blankUser); setEditingUserId(null); }}>Cancel</button>
@@ -669,6 +710,29 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
               </div>
             </div>
           )}
+
+          {/* Download permission toggle */}
+          {selectedUser && (
+            <div className="adm-perm-download-toggle">
+              <span className="adm-input-label" style={{ marginBottom: '10px', display: 'block' }}>Download Permission</span>
+              <button
+                type="button"
+                className={`adm-perm-card ${selectedUser.canDownload !== false ? 'adm-perm-active' : 'adm-perm-inactive'}`}
+                style={{ width: '100%', textAlign: 'left' }}
+                onClick={toggleSelectedUserDownload}
+              >
+                <div className="adm-perm-card-header">
+                  <span className="adm-perm-card-name">⬇️ Can Download Group Data (XLSX)</span>
+                  <span className={`adm-perm-toggle ${selectedUser.canDownload !== false ? 'adm-perm-toggle-on' : ''}`}>
+                    <span className="adm-perm-toggle-knob" />
+                  </span>
+                </div>
+                <div className="adm-perm-card-meta">
+                  {selectedUser.canDownload !== false ? 'Allowed to export group data as Excel' : 'Download access denied'}
+                </div>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="adm-perm-grid">
@@ -733,6 +797,154 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
     </div>
   );
 
+  const DOWNLOAD_COLUMNS = [
+    { key: 'name',      label: 'Company Name' },
+    { key: 'type',      label: 'Company Type' },
+    { key: 'groupName', label: 'Group Name' },
+    { key: 'directors', label: 'Directors' },
+  ];
+
+  const handleDownload = () => {
+    const canDL = activeAdmin?.canDownload !== false;
+    if (!canDL) {
+      window.alert('You do not have download permission.');
+      return;
+    }
+
+    const group = downloadableGroups.find(g => g.id === dlGroupId);
+    if (!group) return;
+
+    if (!group.companies.length) {
+      window.alert('No companies in the selected group.');
+      return;
+    }
+
+    if (!Object.values(dlColumns).some(Boolean)) {
+      window.alert('Please select at least one column.');
+      return;
+    }
+
+    downloadGroupAsExcel(group, dlColumns);
+    saveWithAudit(database, `Downloaded data for group "${group.label}"`);
+  };
+
+  const renderDownload = () => {
+    const canDL = activeAdmin?.canDownload !== false;
+    const groups = downloadableGroups;
+    const selectedGroup = groups.find(g => g.id === dlGroupId) || groups[0];
+
+    return (
+      <div className="adm-section animate-fade-in">
+        <div className="adm-section-header">
+          <div>
+            <h2 className="adm-section-title">Download Group Data</h2>
+            <p className="adm-section-desc">Export company data for any group as an Excel (.xlsx) file. Select the group and choose which columns to include.</p>
+          </div>
+        </div>
+
+        {!canDL ? (
+          <div className="adm-download-denied">
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🔒</div>
+            <h3 style={{ margin: '0 0 8px', color: 'var(--adm-text-primary)' }}>Download Access Denied</h3>
+            <p style={{ margin: 0, color: 'var(--adm-text-muted)' }}>Your account does not have permission to download data. Contact a Super Admin to enable this.</p>
+          </div>
+        ) : (
+          <div className="adm-download-layout">
+            {/* Left: Config Panel */}
+            <div className="adm-download-config">
+              <div className="adm-download-config-section">
+                <span className="adm-input-label" style={{ marginBottom: '10px', display: 'block' }}>Select Group</span>
+                {groups.length === 0 ? (
+                  <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.875rem' }}>No groups accessible.</p>
+                ) : (
+                  <div className="adm-download-group-list">
+                    {groups.map(g => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        className={`adm-download-group-btn ${dlGroupId === g.id ? 'adm-download-group-btn-active' : ''}`}
+                        onClick={() => setDlGroupId(g.id)}
+                      >
+                        <span className="adm-dot adm-dot-purple" style={{ marginRight: '8px' }} />
+                        <span>{g.label}</span>
+                        <span className="adm-badge adm-badge-blue" style={{ marginLeft: 'auto' }}>{g.companies.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="adm-download-config-section">
+                <span className="adm-input-label" style={{ marginBottom: '10px', display: 'block' }}>Select Columns</span>
+                <div className="adm-download-columns">
+                  {DOWNLOAD_COLUMNS.map(col => (
+                    <label key={col.key} className="adm-download-col-item">
+                      <input
+                        type="checkbox"
+                        checked={dlColumns[col.key]}
+                        onChange={() => setDlColumns(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
+                      />
+                      <span>{col.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                  <button type="button" className="adm-btn adm-btn-ghost" style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                    onClick={() => setDlColumns({ name: true, type: true, groupName: true, directors: true })}>
+                    Select All
+                  </button>
+                  <button type="button" className="adm-btn adm-btn-ghost" style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                    onClick={() => setDlColumns({ name: false, type: false, groupName: false, directors: false })}>
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="adm-btn adm-btn-primary"
+                style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px' }}
+                onClick={handleDownload}
+                disabled={!Object.values(dlColumns).some(Boolean) || !selectedGroup}
+              >
+                ⬇️ Download as Excel
+              </button>
+            </div>
+
+            {/* Right: Preview Panel */}
+            <div className="adm-download-preview">
+              <div className="adm-download-preview-header">
+                <span>Preview — {selectedGroup?.label || '—'}</span>
+                <span className="adm-badge adm-badge-blue">{selectedGroup?.companies.length || 0} rows</span>
+              </div>
+              <div className="adm-table-container" style={{ maxHeight: '480px', overflowY: 'auto' }}>
+                <div className="adm-table">
+                  <div className="adm-table-head">
+                    {dlColumns.name      && <div className="adm-th" style={{ flex: 3 }}>Company Name</div>}
+                    {dlColumns.type      && <div className="adm-th" style={{ flex: 1 }}>Type</div>}
+                    {dlColumns.groupName && <div className="adm-th" style={{ flex: 2 }}>Group</div>}
+                    {dlColumns.directors && <div className="adm-th" style={{ flex: 3 }}>Directors</div>}
+                  </div>
+                  {(selectedGroup?.companies || []).map(c => (
+                    <div className="adm-table-row" key={c.id}>
+                      {dlColumns.name      && <div className="adm-td" style={{ flex: 3 }}><strong>{c.name}</strong></div>}
+                      {dlColumns.type      && <div className="adm-td" style={{ flex: 1 }}><span className={`adm-type-badge adm-type-${c.type.toLowerCase()}`}>{c.type}</span></div>}
+                      {dlColumns.groupName && <div className="adm-td adm-td-muted" style={{ flex: 2 }}>{selectedGroup.label}</div>}
+                      {dlColumns.directors && <div className="adm-td adm-td-muted" style={{ flex: 3 }}>{c.directors.join(', ') || '—'}</div>}
+                    </div>
+                  ))}
+                  {(!selectedGroup || selectedGroup.companies.length === 0) && (
+                    <div className="adm-table-empty">No companies in this group.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const sectionMap = {
     dashboard: renderDashboard,
     groups: renderGroups,
@@ -740,6 +952,7 @@ const AdminPanel = ({ database, activeEmail, onActiveEmailChange, onDatabaseSave
     users: renderUsers,
     permissions: renderPermissions,
     audit: renderAuditLog,
+    download: renderDownload,
   };
 
   return (
